@@ -1,2 +1,2 @@
-# pyRisk
+# pyFinRisk
  
