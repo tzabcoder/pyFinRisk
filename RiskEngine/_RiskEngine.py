@@ -1,4 +1,4 @@
-from ._utils import (
+from _utils import (
     validate_portfolio_holdings,
     portfolio_returns_from_holdings
 )
@@ -29,9 +29,9 @@ class RiskEngine:
         self._portfolio_holdings = portfolio_holdings
 
         # Validate the portfolio holdings
-        validated = utils.validate_portfolio_holdings(self._portfolio_holdings)
+        validated = validate_portfolio_holdings(self._portfolio_holdings)
 
-        self._portfolio_returns = utils.portfolio_returns_from_holdings(self._portfolio_holdings)
+        self._portfolio_returns = portfolio_returns_from_holdings(self._portfolio_holdings)
 
     @property
     def portfolio_returns(self) -> list:

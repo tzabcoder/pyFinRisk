@@ -1,4 +1,4 @@
-from ..RiskEngine import StockRiskEngine
+from RiskEngine import StockRiskEngine
 
 holdings = {
     0.5: [0.05, 0.05, 0.05],

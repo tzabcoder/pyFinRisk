@@ -20,7 +20,7 @@ def portfolio_returns_from_holdings(portfolio_holdings: dict) -> list:
 
     # Calclated the weighted returns
     for i in range(len(portfolio_weights)):
-        weighted_return = [ret * portfolio_weights[i] for ret in position_return[i]]
+        weighted_return = [ret * portfolio_weights[i] for ret in position_returns[i]]
 
         if len(portfolio_returns) != 0:
             portfolio_returns = [x + y for x, y in zip(portfolio_returns, weighted_return)]
