@@ -66,6 +66,7 @@ class StockRiskEngine(RiskEngine):
         return beta
 
     def LocalValueAtRisk():
+        # Local VAR
         pass
 
 
