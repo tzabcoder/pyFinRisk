@@ -123,6 +123,16 @@ class RiskEngine:
 
 
     def kurtois(self, arr: list, sample: bool = True) -> float:
+        """
+        * kurtois()
+        *
+        * Calculates the kurtois of a list
+        *
+        * arr: list of numerical values
+        * sample: true if sample, false if population
+        * :returns: kurtois
+        """
+
         n = len(arr)
 
         mu = self.mean(arr)
