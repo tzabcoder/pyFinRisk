@@ -1,8 +1,8 @@
-# Global Packages
+# Global Package Imports
 import numpy as np
 from sklearn.linear_model import LinearRegression
 
-# Local Packages
+# Local Package Imports
 from _RiskEngine import RiskEngine
 
 class StockRiskEngine(RiskEngine):
@@ -13,27 +13,29 @@ class StockRiskEngine(RiskEngine):
     * metrics associated with an equity-based portfolio.
     """
 
-    def __init__(self, portfolio_holdings: dict):
+    def __init__(self, portfolio_holdings: dict, market_returns: list):
         """
         * __init__()
         *
         * Initializes the stock risk engine and the base class.
         *
-        * portfolio_holdings: Historical returns of the asset
+        * portfolio_holdings: historical returns of the asset
         *   NOTE: portfolio_holdings dict must be in the form:
         *         {
-        *           asset_1_weight: [asset_1_returns], ...
-        *           asset_N_weight: [asset_N_returns]
+        *           (asset_1_symbol, asset_1_weight): [asset_1_returns], ...
+        *           (asset_N_symbol, asset_N_weight): [asset_N_returns]
         *         }
+        * market_returns: historical returns of the market portfolio (benchmark)
+        *   NOTE: the market returns must be at least as long as the portfolio returns
         """
 
-        RiskEngine.__init__(self, portfolio_holdings)
+        RiskEngine.__init__(self, portfolio_holdings, market_returns)
 
-    def beta(self, market_returns: list) -> int:
+    def beta(self, portfolio_returns: list, market_returns: list) -> float:
         """
         * beta()
         *
-        * Nominal risk metric.
+        * Linear, first-order risk metric for stocks.
         * Beta measures the portfolio's return sensitivity to the benchmark.
         * Calculated by finding the slope of the regression between the portfolio
         * and market returns.
@@ -45,7 +47,7 @@ class StockRiskEngine(RiskEngine):
         """
 
         beta = None
-        N = len(self.portfolio_returns)
+        N = len(portfolio_returns)
 
         if len(market_returns) < N:
             raise ValueError("Insufficient market returns...")
@@ -53,7 +55,7 @@ class StockRiskEngine(RiskEngine):
         else:
             # Format the returns
             market_returns = market_returns[:N]
-            X = np.array(self.portfolio_returns).reshape(-1, 1)
+            X = np.array(portfolio_returns).reshape(-1, 1)
             y = np.array(market_returns)
 
             linear_model = LinearRegression()
@@ -65,16 +67,6 @@ class StockRiskEngine(RiskEngine):
 
     def LocalValueAtRisk():
         pass
-
-
-
-
-
-
-
-
-
-
 
 
 
