@@ -13,23 +13,25 @@ class StockRiskEngine(RiskEngine):
     * metrics associated with an equity-based portfolio.
     """
 
-    def __init__(self, portfolio_holdings: dict, market_returns: list):
+    def __init__(self, portfolio_details: dict, market_prices: list):
         """
         * __init__()
         *
         * Initializes the stock risk engine and the base class.
         *
-        * portfolio_holdings: historical returns of the asset
-        *   NOTE: portfolio_holdings dict must be in the form:
+        * portfolio_details: details of the financial portfolio (symbols, weights, prices)
+        *                    each dict value index is matched accross all keys
+        *   NOTE: portfolio_details dict must be in the form:
         *         {
-        *           (asset_1_symbol, asset_1_weight): [asset_1_returns], ...
-        *           (asset_N_symbol, asset_N_weight): [asset_N_returns]
+        *           "Symbols" : [Symbol_1, Symbol_2, ..., Symbol_N],
+        *           "Weights" : [Weight_1, Weight_2, ..., Weight_N],
+        *           "Prices" : [[Prices_1], [Prices_2], ..., [Prices_N]]
         *         }
-        * market_returns: historical returns of the market portfolio (benchmark)
+        * market_prices: historical prices of the market portfolio (benchmark)
         *   NOTE: the market returns must be at least as long as the portfolio returns
         """
 
-        RiskEngine.__init__(self, portfolio_holdings, market_returns)
+        RiskEngine.__init__(self, portfolio_details, market_prices)
 
     def beta(self, portfolio_returns: list, market_returns: list) -> float:
         """
@@ -65,24 +67,12 @@ class StockRiskEngine(RiskEngine):
 
         return beta
 
-    def LocalValueAtRisk():
+    def LocalValueAtRisk(self, confidence_interval: float = 0.99) -> float:
         # Local VAR
         pass
 
+    def ConditionalLocalValueAtRisk(self):
+        pass
 
-
-
-
-# TEST code. Formal UTs will be created
-holdings = {
-    0.5: [0.05, 0.05, 0.05],
-    0.25: [0.025, 0.025, 0.025],
-    0.25: [0.01, 0.01, 0.01]
-}
-
-market_returns = [0.12, 0.12, 0.12]
-
-risk_engine = StockRiskEngine(holdings)
-
-beta = risk_engine.beta(market_returns)
-print(beta)
+    def MarginalLocalValueAtRisk(self):
+        pass

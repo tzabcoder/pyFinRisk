@@ -3,8 +3,9 @@ import math
 
 # Local Package Imports
 from _utils import (
-    validate_portfolio_holdings,
-    portfolio_returns_from_holdings
+    calculate_returns,
+    calculate_asset_returns,
+    calculate_returns_from_holdings
 )
 
 class RiskEngine:
@@ -16,48 +17,63 @@ class RiskEngine:
     * inherited by the variety of asset-specific risk engines.
     """
 
-    def __init__(self, portfolio_holdings: dict):
+    def __init__(self, portfolio_details: dict, market_prices: list):
         """
         * __init__()
         *
         * Initializes the risk engine class variables.
         *
-        * portfolio_holdings: historical returns of the asset
-        *   NOTE: portfolio_holdings dict must be in the form:
+        * portfolio_details: details of the financial portfolio (symbols, weights, prices)
+        *                    each dict value index is matched accross all keys
+        *   NOTE: portfolio_details dict must be in the form:
         *         {
-        *           asset_1_weight: [asset_1_returns], ...
-        *           asset_N_weight: [asset_N_returns]
+        *           "Symbols" : [Symbol_1, Symbol_2, ..., Symbol_N],
+        *           "Weights" : [Weight_1, Weight_2, ..., Weight_N],
+        *           "Prices" : [[Prices_1], [Prices_2], ..., [Prices_N]]
         *         }
-        * market_returns: historical market portfolio returns
+        * market_prices: historical prices of the market portfolio (benchmark)
         """
 
-        self._portfolio_holdings = portfolio_holdings
-        self._market_returns = market_returns
+        self._portfolio_details = portfolio_details
+        self._market_prices  = market_prices
 
-        # Validate the portfolio holdings
-        validated = validate_portfolio_holdings(self._portfolio_holdings)
+        # Adds _portfolio_details['Returns']
+        calculate_asset_returns(self._portfolio_details)
 
-        self._portfolio_returns = portfolio_returns_from_holdings(self._portfolio_holdings)
+        # Calculate the log-based daily returns
+        self._portfolio_returns = calculate_returns_from_holdings(self._portfolio_returns)
+        self._market_returns = calculate_returns(self._market_prices)
 
+    ####################################################################
+    # Getter properties
     @property
     def portfolio_returns(self) -> list:
-        """
-        * portfolio_returns()
-        *
-        * Getter function for the portfolio returns
-        """
-
         return self._portfolio_returns
 
     @property
     def market_returns(self) -> list:
-        """
-        * market_returns()
-        *
-        * Getter function for the market returns
-        """
-
         return self._market_returns
+
+    # Portfolio details getter properties
+    @property
+    def portfolio_symbols(self) -> list:
+        return self._portfolio_details['Symbols']
+
+    @property
+    def portfolio_weights(self) -> list:
+        return self._portfolio_details['Weights']
+
+    @property
+    def portfolio_prices(self) -> list:
+        return self._portfolio_details['Prices']
+
+    @property
+    def portfolio_asset_returns(self) -> list:
+        if 'Returns' in self._portfolio_details:
+            return self._portfolio_details['Returns']
+        else:
+            return None
+    ####################################################################
 
     def mean(self, arr: list) -> float:
         """
