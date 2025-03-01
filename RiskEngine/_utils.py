@@ -15,9 +15,26 @@ def calculate_returns(prices: list) -> list:
     shifted_prices = np.roll(prices, 1)
     shifted_prices[0] = np.nan
 
-    returns = ( prices / shifted_prices ) - 1
+    returns = (prices / shifted_prices) - 1
 
     return returns[1:].tolist()
+
+def calculate_log_returns(prices: list) -> list:
+    """
+    * calculate_log_returns()
+    *
+    * Calculates the log returns from a list of prices
+    *
+    * prices: list of asset prices
+    * :returns: a list of period log returns
+    """
+
+    prices = np.array(prices)
+    shifted_prices = np.roll(prices, 1)
+
+    log_returns = np.log(prices / shifted_prices)
+
+    return log_returns[1:].tolist()
 
 def calculate_asset_returns(portfolio_details: dict):
     """
@@ -30,13 +47,16 @@ def calculate_asset_returns(portfolio_details: dict):
     """
 
     returns = []
+    log_returns = []
     asset_prices = portfolio_details['Prices']
 
     for prices in asset_prices:
         returns.append(calculate_returns(prices))
+        log_returns.append(calculate_log_returns(prices))
 
     # Set the asset returns
     portfolio_details['Returns'] = returns
+    portfolio_details['Log_Returns'] = log_returns
 
 def calculate_returns_from_holdings(portfolio_holdings: dict) -> list:
     """

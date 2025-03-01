@@ -1,9 +1,11 @@
 # Global Package Imports
+import math
 import numpy as np
+import scipy.stats as stats
 from sklearn.linear_model import LinearRegression
 
 # Local Package Imports
-from _RiskEngine import RiskEngine
+from RiskEngine._RiskEngine import RiskEngine
 
 class StockRiskEngine(RiskEngine):
     """
@@ -12,6 +14,9 @@ class StockRiskEngine(RiskEngine):
     * The stock risk engine is the framework for calculating all financial risk
     * metrics associated with an equity-based portfolio.
     """
+
+    # Constants
+    _TRADING_DAYS = 252
 
     def __init__(self, portfolio_details: dict, market_prices: list):
         """
@@ -67,12 +72,39 @@ class StockRiskEngine(RiskEngine):
 
         return beta
 
-    def LocalValueAtRisk(self, confidence_interval: float = 0.99) -> float:
-        # Local VAR
+    def BasicLocalVAR(self, confidence_interval: float = 0.99) -> float:
+
+        # Validate confidence interval
+        if confidence_interval <= 0 or confidence_interval >= 1:
+            raise ValueError('Confidence interval must be greater than 0 and less than 1...')
+            return None
+
+        # Get the z-score from the confidence interval
+        alpha = 1 - confidence_interval
+        z_score = stats.norm.ppf(1 - alpha / 2)
+
+        # Calculate the annualized standard deviation for each asset's return
+        stddevs = []
+        for returns in self.portfolio_asset_log_returns:
+            stddev = self.standard_deviation(returns)
+            stddevs.append(stddev * math.sqrt(len(returns) / self._TRADING_DAYS))
+
+        # Calculate the coariance matrix
+        cov_matrix = np.cov(self.portfolio_asset_log_returns, rowvar = True)
+
+        adjusted_covariance = np.matmul(cov_matrix, self.portfolio_weights)
+
+        # Calculate individual positional risk
+        positional_risk = [adjusted_covariance[i] * self.portfolio_weights[i] for i in range(len(adjusted_covariance))]
+        total_positional_risk = sum(positional_risk)
+
+        risk = math.sqrt(total_positional_risk)
+
+        # Calculate and return the basic VAR
+        return risk * z_score
+
+    def ConditionalLocalVAR(self):
         pass
 
-    def ConditionalLocalValueAtRisk(self):
-        pass
-
-    def MarginalLocalValueAtRisk(self):
+    def MarginalLocalVAR(self):
         pass

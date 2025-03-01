@@ -2,7 +2,7 @@
 import math
 
 # Local Package Imports
-from _utils import (
+from RiskEngine._utils import (
     calculate_returns,
     calculate_asset_returns,
     calculate_returns_from_holdings
@@ -38,10 +38,11 @@ class RiskEngine:
         self._market_prices  = market_prices
 
         # Adds _portfolio_details['Returns']
+        # Adds _portfolio_details['Log_Returns']
         calculate_asset_returns(self._portfolio_details)
 
         # Calculate the log-based daily returns
-        self._portfolio_returns = calculate_returns_from_holdings(self._portfolio_returns)
+        self._portfolio_returns = calculate_returns_from_holdings(self._portfolio_details)
         self._market_returns = calculate_returns(self._market_prices)
 
     ####################################################################
@@ -71,6 +72,13 @@ class RiskEngine:
     def portfolio_asset_returns(self) -> list:
         if 'Returns' in self._portfolio_details:
             return self._portfolio_details['Returns']
+        else:
+            return None
+
+    @property
+    def portfolio_asset_log_returns(self) -> list:
+        if 'Log_Returns' in self._portfolio_details:
+            return self._portfolio_details['Log_Returns']
         else:
             return None
     ####################################################################
