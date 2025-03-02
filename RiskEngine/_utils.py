@@ -84,3 +84,24 @@ def calculate_returns_from_holdings(portfolio_holdings: dict) -> list:
             portfolio_returns = [r1 + r2 for r1, r2 in zip(portfolio_returns, r)]
 
     return portfolio_returns
+
+def calculate_portfolio_value(portfolio_weights: list, portfolio_prices: list) -> float:
+    """
+    * calculate_portfolio_value()
+    *
+    * Calculates the portfolio value from the portfolio weights and prices
+    *
+    * portfolio_weights: list of portfolio weights
+    * portfolio_prices: list of portfolio prices
+    * :returns: the value of the portfolio, None if error
+    """
+
+    # Extract the most recent prices for each asset
+    recent_portfolio_prices = []
+    for prices in portfolio_prices:
+        recent_portfolio_prices.append(prices[-1])
+
+    # Calculate the portfolio value
+    portfolio_value = np.dot(portfolio_weights, recent_portfolio_prices)
+
+    return portfolio_value

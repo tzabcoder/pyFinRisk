@@ -1,0 +1,2 @@
+Create a function to display first-order portfolio statistics (descriptive statistics)
+Create a function to graph portfolio results (what about VAR)

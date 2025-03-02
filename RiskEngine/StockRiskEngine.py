@@ -6,6 +6,9 @@ from sklearn.linear_model import LinearRegression
 
 # Local Package Imports
 from RiskEngine._RiskEngine import RiskEngine
+from RiskEngine._utils import (
+    calculate_portfolio_value
+)
 
 class StockRiskEngine(RiskEngine):
     """
@@ -72,7 +75,26 @@ class StockRiskEngine(RiskEngine):
 
         return beta
 
-    def BasicLocalVAR(self, confidence_interval: float = 0.99) -> float:
+    def BasicPortfolioVAR(self, confidence_interval: float = 0.99, log_based: bool = False, dollar_based: bool = False) -> float:
+        """
+        * BasicPortfolioVAR()
+        *
+        * Calculates the basic portfolio value at risk (VAR) using the covariance
+        * matrix of the portfolio's assets. This method calculates VAR based on its
+        * historical asset returns.
+        * The portfolio variance is calclated as:
+        *  V = w * COV * w'
+        * The portfolio risk is then calculated as:
+        *  R = sqrt(V)
+        * The VAR is then calculated as:
+        *  VAR = R * z
+        * where z is the z-score of the confidence interval.
+        *
+        * confidence_interval: confidence interval for the VAR calculation
+        * log_based: if True, use log returns, else use simple returns
+        * dollar_based: if True, use dollar based VAR, else use percentage based VAR
+        * :returns: the basic portfolio VAR, None if failure
+        """
 
         # Validate confidence interval
         if confidence_interval <= 0 or confidence_interval >= 1:
@@ -83,25 +105,25 @@ class StockRiskEngine(RiskEngine):
         alpha = 1 - confidence_interval
         z_score = stats.norm.ppf(1 - alpha / 2)
 
-        # Calculate the annualized standard deviation for each asset's return
-        stddevs = []
-        for returns in self.portfolio_asset_log_returns:
-            stddev = self.standard_deviation(returns)
-            stddevs.append(stddev * math.sqrt(len(returns) / self._TRADING_DAYS))
-
         # Calculate the coariance matrix
-        cov_matrix = np.cov(self.portfolio_asset_log_returns, rowvar = True)
+        if log_based:
+            cov_matrix = np.cov(self.portfolio_asset_log_returns, rowvar = True)
+        else:
+            cov_matrix = np.cov(self.portfolio_asset_returns, rowvar = True)
 
-        adjusted_covariance = np.matmul(cov_matrix, self.portfolio_weights)
+        # Variance of portfolio rate of return
+        portfolio_variance = self.portfolio_weights @ cov_matrix @ np.transpose(self.portfolio_weights)
 
-        # Calculate individual positional risk
-        positional_risk = [adjusted_covariance[i] * self.portfolio_weights[i] for i in range(len(adjusted_covariance))]
-        total_positional_risk = sum(positional_risk)
-
-        risk = math.sqrt(total_positional_risk)
+        # Callculate the portfolio risk
+        portfolio_risk = math.sqrt(portfolio_variance)
 
         # Calculate and return the basic VAR
-        return risk * z_score
+        var = portfolio_risk * z_score
+
+        if dollar_based:
+            return var * calculate_portfolio_value(self.portfolio_weights, self.portfolio_prices)
+        else:
+            return var
 
     def ConditionalLocalVAR(self):
         pass
