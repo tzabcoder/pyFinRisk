@@ -1,2 +1,7 @@
 Create a function to display first-order portfolio statistics (descriptive statistics)
 Create a function to graph portfolio results (what about VAR)
+
+For the historical VAR methods create:
+    1. Marginal portfolio VAR
+    2. Conditional portfolio VAR
+This SHOULD be based on the basic portfolio VAR
