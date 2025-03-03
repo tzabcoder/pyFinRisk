@@ -97,13 +97,13 @@ class StockRiskEngine(RiskEngine):
         """
 
         # Validate confidence interval
-        if confidence_interval <= 0 or confidence_interval >= 1:
+        if confidence_interval <= 0.01 or confidence_interval >= 1:
             raise ValueError('Confidence interval must be greater than 0 and less than 1...')
             return None
 
-        # Get the z-score from the confidence interval
-        alpha = 1 - confidence_interval
-        z_score = stats.norm.ppf(1 - alpha / 2)
+        # Get the CRITICAL z-score from the confidence interval (right-tailed test)
+        # The confidence interval is already passed as 1 - alpha, where alpha is the significance level
+        z_score = stats.norm.ppf(confidence_interval)
 
         # Calculate the coariance matrix
         if log_based:
