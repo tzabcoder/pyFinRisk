@@ -24,7 +24,7 @@ class UnitTest:
         # Initialize the risk engines
         self.stock_risk_engine = StockRiskEngine(self.portfolio_details, self.market_prices)
 
-    def BasicPortfolioVAR_NonLog(self, test_counter: int):
+    def BasicPortfolioVAR_NonLog(self, test_counter: int) -> int:
         """
         * BasicPortfolioVAR_NonLog()
         *
@@ -69,7 +69,9 @@ class UnitTest:
         else:
             print("BasicPortfolioVAR_NonLog(): FAILED...")
 
-    def BasicPortfolioVAR_Log(self, test_counter: int):
+        return test_counter
+
+    def BasicPortfolioVAR_Log(self, test_counter: int) -> int:
         """
         * BasicPortfolioVAR_Log()
         *
@@ -114,7 +116,9 @@ class UnitTest:
         else:
             print("BasicPortfolioVAR_Log(): FAILED...")
 
-    def BasicPortfolioVAR_Dollar(self, test_counter: int):
+        return test_counter
+
+    def BasicPortfolioVAR_Dollar(self, test_counter: int) -> int:
         """
         * BasicPortfolioVAR_Dollar()
         *
@@ -159,6 +163,24 @@ class UnitTest:
         else:
             print("BasicPortfolioVAR_Dollar(): FAILED...")
 
+        return test_counter
+
+    def DisplayPortfolioStatistics(self, test_counter: int) -> int:
+        """
+        * DisplayPortfolioStatistics()
+        *
+        * This function tests the display of the portfolio statistics. This test
+        * always passes and is used to visually inspect the portfolio statistics.
+        """
+
+        test_counter += 1
+        print(f"Running Test: DisplayPortfolioStatistics() - Test {test_counter}...")
+
+        # Display the portfolio statistics
+        self.stock_risk_engine.DisplayPortfolioStatistics(plot=True)
+
+        return test_counter
+
     def run(self):
         """
         * run()
@@ -171,6 +193,7 @@ class UnitTest:
         print('Running Unit Tests...')
         print('------------------------------------------')
 
-        self.BasicPortfolioVAR_NonLog(test_counter)
-        self.BasicPortfolioVAR_Log(test_counter)
-        self.BasicPortfolioVAR_Dollar(test_counter)
+        test_counter = self.BasicPortfolioVAR_NonLog(test_counter)
+        test_counter = self.BasicPortfolioVAR_Log(test_counter)
+        test_counter = self.BasicPortfolioVAR_Dollar(test_counter)
+        test_counter = self.DisplayPortfolioStatistics(test_counter)

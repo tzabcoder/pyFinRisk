@@ -51,7 +51,7 @@ class RiskEngine:
         self._market_returns = calculate_returns(self._market_prices)
 
     ####################################################################
-    # Getter properties
+    # Getter Properties
     ####################################################################
     @property
     def portfolio_returns(self) -> list:
@@ -263,15 +263,15 @@ class RiskEngine:
         return (bessel if sample else 1) * sum(((x - mu) / sd) ** 3 for x in arr)
 
 
-    def kurtois(self, arr: list, sample: bool = True) -> float:
+    def kurtosis(self, arr: list, sample: bool = True) -> float:
         """
-        * kurtois()
+        * kurtosis()
         *
-        * Calculates the kurtois of a list
+        * Calculates the kurtosis of a list
         *
         * arr: list of numerical values
         * sample: true if sample, false if population
-        * :returns: kurtois
+        * :returns: kurtosis
         """
 
         n = len(arr)

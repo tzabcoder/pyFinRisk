@@ -6,6 +6,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'math',
+        'matplotlib',
         'numpy',
         'scipy',
         'scikit-learn',

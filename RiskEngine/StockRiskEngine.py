@@ -1,6 +1,7 @@
 # Global Package Imports
 import math
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 
 # Local Package Imports
@@ -40,6 +41,9 @@ class StockRiskEngine(RiskEngine):
 
         RiskEngine.__init__(self, portfolio_details, market_prices)
 
+    ####################################################################
+    # Support Functions
+    ####################################################################
     def beta(self, portfolio_returns: list, market_returns: list) -> float:
         """
         * beta()
@@ -74,6 +78,64 @@ class StockRiskEngine(RiskEngine):
 
         return beta
 
+    def DisplayPortfolioStatistics(self, plot: bool = False) -> None:
+        """
+        * DisplayPortfolioStatistics()
+        *
+        * Displays the portfolio statistics relating to the return distribution.
+        * If plot is true, the historical returns, distribution, and volatility are
+        * plotted.
+        *
+        * plot: flag to plot the portfolio statistics
+        """
+
+        # Calculate the portfolio statistics
+        mean = self.mean(self.portfolio_returns)
+        variance = self.variance(self.portfolio_returns)
+        standard_deviation = self.standard_deviation(self.portfolio_returns)
+        skewness = self.skewness(self.portfolio_returns)
+        kurtosis = self.kurtosis(self.portfolio_returns)
+
+        beta = self.beta(self.portfolio_returns, self.market_returns)
+
+        # Display the portfolio statistics
+        print("Portfolio Statistics")
+        print('==================================================')
+        print(f"Beta of Portfolio:  -------------------  {beta:.4f}")
+        print(f"Mean of Portfolio Returns:  -----------  {(mean * 100):.4f}%")
+        print(f"Variance of Portfolio Returns:  -------  {(variance * 100):.4f}%")
+        print(f"Standard Deviation of Portfolio Returns: {(standard_deviation * 100):.4f}%")
+        print(f"Skewness of Portfolio Returns:  -------  {skewness:.4f}")
+        print(f"Kurtosis of Portfolio Returns:  -------  {kurtosis:.4f}")
+        print('==================================================')
+
+        # Plot the portfolio returns and distribution
+        if plot:
+            fig, axes = plt.subplots(1, 2, figsize = (15, 5))
+
+            # Plot the historical returns of the portfolio
+            cummulative_portfolio_returns = np.cumsum(self.portfolio_returns)
+            cummulative_market_returns = np.cumsum(self.market_returns)
+
+            axes[0].plot(cummulative_portfolio_returns, label="Portfolio Returns")
+            axes[0].plot(cummulative_market_returns, label="Market Returns")
+            axes[0].legend()
+            axes[0].set_title("Portfolio Returns")
+            axes[0].set_xlabel("Days")
+            axes[0].set_ylabel("Returns")
+
+            # Plot the historical return distribution
+            axes[1].hist(self.portfolio_returns, bins = 50, edgecolor = 'black', alpha = 0.7)
+            axes[1].set_title('Portfolio Returns Distribution')
+            axes[1].set_xlabel('Returns')
+            axes[1].set_ylabel('Frequency')
+
+            # Show the plot
+            plt.show()
+
+    ####################################################################
+    # Value at Risk Functions
+    ####################################################################
     def IndividualVAR(self, symbol: str, confidence_interval: float = 0.99, log_based: bool = False) -> float:
         """
         * IndividualVAR()
