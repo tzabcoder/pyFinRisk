@@ -1,7 +1,6 @@
 # Global Package Imports
 import math
 import numpy as np
-import scipy.stats as stats
 from sklearn.linear_model import LinearRegression
 
 # Local Package Imports
@@ -27,12 +26,12 @@ class StockRiskEngine(RiskEngine):
         *
         * Initializes the stock risk engine and the base class.
         *
-        * portfolio_details: details of the financial portfolio (symbols, weights, prices)
+        * portfolio_details: details of the financial portfolio (symbols, shares, prices)
         *                    each dict value index is matched accross all keys
         *   NOTE: portfolio_details dict must be in the form:
         *         {
         *           "Symbols" : [Symbol_1, Symbol_2, ..., Symbol_N],
-        *           "Weights" : [Weight_1, Weight_2, ..., Weight_N],
+        *           "Shares" : [Shares_1, Shares_2, ..., Shares_N],
         *           "Prices" : [[Prices_1], [Prices_2], ..., [Prices_N]]
         *         }
         * market_prices: historical prices of the market portfolio (benchmark)
@@ -75,6 +74,53 @@ class StockRiskEngine(RiskEngine):
 
         return beta
 
+    def IndividualVAR(self, symbol: str, confidence_interval: float = 0.99, log_based: bool = False) -> float:
+        """
+        * IndividualVAR()
+        *
+        * Calculates the individual value at risk (VAR) for an asset using the historical
+        * asset returns.
+        * The individual VAR is calculated as:
+        *  VAR = sd * z * w
+        *
+        * confidence_interval: confidence interval for the VAR calculation
+        * log_based: if True, use log returns, else use simple returns
+        * :returns: the individual VAR, None if failure
+        """
+
+        # Validate confidence interval
+        if confidence_interval <= 0.01 or confidence_interval >= 1:
+            raise ValueError('Confidence interval must be greater than 0 and less than 1...')
+            return None
+
+        # Get the asset returns
+        if log_based:
+            asset_return = self.get_asset_log_returns(symbol)
+        else:
+            asset_return = self.get_asset_returns(symbol)
+
+        # Get the asset weight
+        asset_weight = self.get_asset_weight(symbol)
+
+        # Calculate the annualized individual portfolio risk
+        stddev = self.standard_deviation(asset_return) * math.sqrt(self._TRADING_DAYS)
+
+        if dollar_based:
+            # Get the asset price and shares
+            recent_price = self.get_asset_prices(symbol)[-1]
+            tota_shares = self.get_asset_shares(symbol)
+
+            # Calculate the individual VAR
+            var = stddev * self.critical_z_score(confidence_interval)
+
+            # Return the dollar-based VAR
+            return var * recent_price * total_shares
+        else:
+            # Calculate the individual VAR
+            var = stddev * self.critical_z_score(confidence_interval) * asset_weight
+
+            return var
+
     def BasicPortfolioVAR(self, confidence_interval: float = 0.99, log_based: bool = False, dollar_based: bool = False) -> float:
         """
         * BasicPortfolioVAR()
@@ -101,10 +147,6 @@ class StockRiskEngine(RiskEngine):
             raise ValueError('Confidence interval must be greater than 0 and less than 1...')
             return None
 
-        # Get the CRITICAL z-score from the confidence interval (right-tailed test)
-        # The confidence interval is already passed as 1 - alpha, where alpha is the significance level
-        z_score = stats.norm.ppf(confidence_interval)
-
         # Calculate the coariance matrix
         if log_based:
             cov_matrix = np.cov(self.portfolio_asset_log_returns, rowvar = True)
@@ -118,10 +160,10 @@ class StockRiskEngine(RiskEngine):
         portfolio_risk = math.sqrt(portfolio_variance)
 
         # Calculate and return the basic VAR
-        var = portfolio_risk * z_score
+        var = portfolio_risk * self.critical_z_score(confidence_interval)
 
         if dollar_based:
-            return var * calculate_portfolio_value(self.portfolio_weights, self.portfolio_prices)
+            return var * calculate_portfolio_value(self.portfolio_shares, self.portfolio_prices)
         else:
             return var
 

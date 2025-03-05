@@ -58,6 +58,29 @@ def calculate_asset_returns(portfolio_details: dict):
     portfolio_details['Returns'] = returns
     portfolio_details['Log_Returns'] = log_returns
 
+def calculate_asset_weights(portfolio_details: dict):
+    """
+    * calculate_asset_weights()
+    *
+    * Calculates the individual asset weights from per-share holdings.
+    * The parameter is passed by reference
+    *
+    * portfolio_details: details of the complete portfolio
+    """
+
+    weights = []
+    total_shares = sum(portfolio_details['Shares'])
+    shares = portfolio_details['Shares']
+
+    for i in range(len(shares)):
+        # Calculate the weight of each asset
+        w = shares[i] / total_shares
+
+        weights.append(w)
+
+    # Set the asset weights
+    portfolio_details['Weights'] = weights
+
 def calculate_returns_from_holdings(portfolio_holdings: dict) -> list:
     """
     * extract_returns_from_holdings()
@@ -85,13 +108,13 @@ def calculate_returns_from_holdings(portfolio_holdings: dict) -> list:
 
     return portfolio_returns
 
-def calculate_portfolio_value(portfolio_weights: list, portfolio_prices: list) -> float:
+def calculate_portfolio_value(portfolio_shares: list, portfolio_prices: list) -> float:
     """
     * calculate_portfolio_value()
     *
-    * Calculates the portfolio value from the portfolio weights and prices
+    * Calculates the portfolio value from the portfolio shares and prices
     *
-    * portfolio_weights: list of portfolio weights
+    * portfolio_shares: list of portfolio shares
     * portfolio_prices: list of portfolio prices
     * :returns: the value of the portfolio, None if error
     """
@@ -102,6 +125,6 @@ def calculate_portfolio_value(portfolio_weights: list, portfolio_prices: list) -
         recent_portfolio_prices.append(prices[-1])
 
     # Calculate the portfolio value
-    portfolio_value = np.dot(portfolio_weights, recent_portfolio_prices)
+    portfolio_value = np.dot(portfolio_shares, recent_portfolio_prices)
 
     return portfolio_value

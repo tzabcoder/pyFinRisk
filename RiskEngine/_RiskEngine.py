@@ -1,10 +1,12 @@
 # Global Package Imports
 import math
+import scipy.stats as stats
 
 # Local Package Imports
 from RiskEngine._utils import (
     calculate_returns,
     calculate_asset_returns,
+    calculate_asset_weights,
     calculate_returns_from_holdings
 )
 
@@ -23,12 +25,12 @@ class RiskEngine:
         *
         * Initializes the risk engine class variables.
         *
-        * portfolio_details: details of the financial portfolio (symbols, weights, prices)
+        * portfolio_details: details of the financial portfolio (symbols, shares, prices)
         *                    each dict value index is matched accross all keys
         *   NOTE: portfolio_details dict must be in the form:
         *         {
         *           "Symbols" : [Symbol_1, Symbol_2, ..., Symbol_N],
-        *           "Weights" : [Weight_1, Weight_2, ..., Weight_N],
+        *           "Shares" : [Shares_1, Shares_2, ..., Shares_N],
         *           "Prices" : [[Prices_1], [Prices_2], ..., [Prices_N]]
         *         }
         * market_prices: historical prices of the market portfolio (benchmark)
@@ -36,6 +38,9 @@ class RiskEngine:
 
         self._portfolio_details = portfolio_details
         self._market_prices  = market_prices
+
+        # Adds _portfolio_details['Weights']
+        calculate_asset_weights(self._portfolio_details)
 
         # Adds _portfolio_details['Returns']
         # Adds _portfolio_details['Log_Returns']
@@ -47,6 +52,7 @@ class RiskEngine:
 
     ####################################################################
     # Getter properties
+    ####################################################################
     @property
     def portfolio_returns(self) -> list:
         return self._portfolio_returns
@@ -59,6 +65,10 @@ class RiskEngine:
     @property
     def portfolio_symbols(self) -> list:
         return self._portfolio_details['Symbols']
+
+    @property
+    def portfolio_shares(self) -> list:
+        return self._portfolio_details['Shares']
 
     @property
     def portfolio_weights(self) -> list:
@@ -81,7 +91,114 @@ class RiskEngine:
             return self._portfolio_details['Log_Returns']
         else:
             return None
+
     ####################################################################
+    # Portfolio Accessor Functions
+    ####################################################################
+    def get_asset_returns(self, symbol: str) -> list:
+        """
+        * get_asset_returns()
+        *
+        * Returns the asset returns for a given symbol.
+        *
+        * symbol: the symbol of the asset
+        * :returns: the asset returns for the given symbol
+        """
+
+        if symbol in self.portfolio_symbols:
+            index = self.portfolio_symbols.index(symbol)
+            return self.portfolio_asset_returns[index]
+        else:
+            raise ValueError(f"Symbol {symbol} not found in portfolio...")
+            return None
+
+    def get_asset_log_returns(self, symbol: str) -> list:
+        """
+        * get_asset_log_returns()
+        *
+        * Returns the asset log returns for a given symbol.
+        *
+        * symbol: the symbol of the asset
+        * :returns: the asset log returns for the given symbol
+        """
+
+        if symbol in self.portfolio_symbols:
+            index = self.portfolio_symbols.index(symbol)
+            return self.portfolio_asset_log_returns[index]
+        else:
+            raise ValueError(f"Symbol {symbol} not found in portfolio...")
+            return None
+
+    def get_asset_prices(self, symbol: str) -> list:
+        """
+        * get_asset_price()
+        *
+        * Returns the asset prices for a given symbol.
+        *
+        * symbol: the symbol of the asset
+        * :returns: the asset prices for the given symbol
+        """
+
+        if symbol in self.portfolio_symbols:
+            index = self.portfolio_symbols.index(symbol)
+            return self.portfolio_prices[index]
+        else:
+            raise ValueError(f"Symbol {symbol} not found in portfolio...")
+            return None
+
+    def get_asset_weight(self, symbol: str) -> float:
+        """
+        * get_asset_weight()
+        *
+        * Returns the asset weight for a given symbol.
+        *
+        * symbol: the symbol of the asset
+        * :returns: the asset weight for the given symbol
+        """
+
+        if symbol in self.portfolio_symbols:
+            index = self.portfolio_symbols.index(symbol)
+            return self.portfolio_weights[index]
+        else:
+            raise ValueError(f"Symbol {symbol} not found in portfolio...")
+            return None
+
+    def get_asset_shares(self, symbol: str) -> float:
+        """
+        * get_asset_shares()
+        *
+        * Returns the asset shares for a given symbol.
+        *
+        * symbol: the symbol of the asset
+        * :returns: the asset shares for the given symbol
+        """
+
+        if symbol in self.portfolio_symbols:
+            index = self.portfolio_symbols.index(symbol)
+            return self._portfolio_details['Shares'][index]
+        else:
+            raise ValueError(f"Symbol {symbol} not found in portfolio...")
+            return None
+
+    ####################################################################
+    # Statistical Functions
+    ####################################################################
+    def critical_z_score(self, confidence_interval: float) -> float:
+        """
+        * critical_z_score()
+        *
+        * Calculates the critical z-score for a given confidence interval
+        * NOTE: The confidence interval is already passed as 1 - alpha
+        *
+        * confidence_interval: confidence interval for the z-score calculation
+        * :returns: the critical z-score
+        """
+
+        # Get the CRITICAL z-score from the confidence interval (right-tailed test)
+        # The confidence interval is already passed as 1 - alpha, where alpha is the significance level
+        z_score = stats.norm.ppf(confidence_interval)
+
+        return z_score
 
     def mean(self, arr: list) -> float:
         """
