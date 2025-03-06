@@ -2,7 +2,8 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
+import statsmodels.api as sm
+from statsmodels import regression
 
 # Local Package Imports
 from RiskEngine._RiskEngine import RiskEngine
@@ -44,23 +45,24 @@ class StockRiskEngine(RiskEngine):
     ####################################################################
     # Support Functions
     ####################################################################
-    def beta(self, portfolio_returns: list, market_returns: list) -> float:
+    def Beta(self, returns: list, market_returns: list) -> float:
         """
-        * beta()
+        * Beta()
         *
         * Linear, first-order risk metric for stocks.
-        * Beta measures the portfolio's return sensitivity to the benchmark.
-        * Calculated by finding the slope of the regression between the portfolio
+        * Beta measures the assets's return sensitivity to the benchmark.
+        * Calculated by finding the slope of the regression between the asset
         * and market returns.
         * NOTE: The size of the market returns MUST be the same periocidy of the
-        *       portfolio and have at least as many occurances as the portfolio.
+        *       asset and have at least as many occurances as the asset.
         *
+        * returns: list of returns to calculate the beta
         * market_returns: list of market returns
-        * :returns: beta of the portfolio, None if failure
+        * :returns: beta of the asset, None if failure
         """
 
         beta = None
-        N = len(portfolio_returns)
+        N = len(returns)
 
         if len(market_returns) < N:
             raise ValueError("Insufficient market returns...")
@@ -68,13 +70,17 @@ class StockRiskEngine(RiskEngine):
         else:
             # Format the returns
             market_returns = market_returns[:N]
-            X = np.array(portfolio_returns).reshape(-1, 1)
-            y = np.array(market_returns)
+            X = market_returns
+            y = returns
 
-            linear_model = LinearRegression()
-            linear_model.fit(X, y)
+            x = sm.add_constant(X)
+            model = regression.linear_model.OLS(y, x).fit()
 
-            beta = linear_model.coef_[0] # Extract beta coefficient
+            # Remove the constant term
+            x = x[:, 1]
+
+            # Calculate the beta coefficient
+            beta = model.params[1]
 
         return beta
 
@@ -82,9 +88,10 @@ class StockRiskEngine(RiskEngine):
         """
         * DisplayPortfolioStatistics()
         *
-        * Displays the portfolio statistics relating to the return distribution.
-        * If plot is true, the historical returns, distribution, and volatility are
-        * plotted.
+        * Displays the first-order portfolio statistics relating to the return distribution.
+        * The first-order statistics describe the historical return distribution of the
+        * portfolio. If the plot flag is true, the function will plot the historical portfolio
+        * returns vs. the market and the distribution of historical returns.
         *
         * plot: flag to plot the portfolio statistics
         """
@@ -95,8 +102,7 @@ class StockRiskEngine(RiskEngine):
         standard_deviation = self.standard_deviation(self.portfolio_returns)
         skewness = self.skewness(self.portfolio_returns)
         kurtosis = self.kurtosis(self.portfolio_returns)
-
-        beta = self.beta(self.portfolio_returns, self.market_returns)
+        beta = self.Beta(self.portfolio_returns, self.market_returns)
 
         # Display the portfolio statistics
         print("Portfolio Statistics")
@@ -229,8 +235,35 @@ class StockRiskEngine(RiskEngine):
         else:
             return var
 
-    def ConditionalLocalVAR(self):
-        pass
+    def MarginalLocalVAR(self, symbol: str) -> float:
+        """
+        * MarginalLocalVAR()
+        *
+        * Calculates the marginal local value at risk (VAR) for an asset using the
+        * basic VAR of the portfolio and the beta of the asset. The Marginal VAR measures
+        * the change in portfolio VAR as a result from taking additional dollar exposure
+        * to a given component.
+        *
+        * symbol: symbol of the asset to calculate the marginal VAR
+        * :returns: the marginal local VAR (in dollar terms), None if failure
+        """
 
-    def MarginalLocalVAR(self):
+        asset_return = self.get_asset_returns(symbol)
+
+        # Calculate the beta of the individual position
+        beta_i = self.Beta(asset_return, self.market_returns)
+
+        # Calculate the dollar basic VAR of the portfolio
+        basic_var = self.BasicPortfolioVAR(dollar_based=True)
+
+        if beta_i is None or basic_var is None:
+            marginal_var = None
+
+        else:
+            marginal_var = (basic_var / self.calculate_portfolio_value(self.portfolio_shares, self.portfolio_prices)) * beta_i
+
+        # Returns the marginal VAR for the asset
+        return marginal_var
+
+    def ConditionalLocalVAR(self):
         pass

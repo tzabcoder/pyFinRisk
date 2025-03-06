@@ -3,6 +3,7 @@ import yfinance as yf
 
 # Local Imports
 from RiskEngine.StockRiskEngine import StockRiskEngine
+from RiskEngine._utils import calculate_returns
 
 class UnitTest:
     def __init__(self):
@@ -14,15 +15,61 @@ class UnitTest:
 
         # Download the asset prices
         _prices = []
+        self.asset_returns = {}
         for symbol in self.portfolio_details["Symbols"]:
-            _prices.append(yf.download(symbol, start="2023-05-15", end="2024-05-16", auto_adjust=False, progress=False)['Close'][symbol].to_list())
+            # Extract the prices
+            _temp_prices = yf.download(symbol, start="2023-05-15", end="2024-05-16", auto_adjust=False, progress=False)['Close'][symbol].to_list()
+            _prices.append(_temp_prices)
+
+            # Calculate price returns
+            self.asset_returns[symbol] = calculate_returns(_temp_prices)
         self.portfolio_details["Prices"] = _prices
 
         # Download the market prices
         self.market_prices = yf.download('SPY', start="2023-05-15", end="2024-05-16", auto_adjust=False, progress=False)['Close']['SPY'].to_list()
+        self.market_returns = calculate_returns(self.market_prices)
 
         # Initialize the risk engines
         self.stock_risk_engine = StockRiskEngine(self.portfolio_details, self.market_prices)
+
+    def Beta(self, test_counter: int) -> int:
+        """
+        * Beta()
+        *
+        * This function tests the beta calculation.
+        * The results are compared to the expected values that were caculated using
+        * the 'Portfolio_VAR.xlsx' file.
+        """
+
+        test_counter += 1
+        print(f"Running Test: Beta() - Test {test_counter}...")
+
+        # NOTE: These numbers were caculated manually using the 'Portfolio_VAR.xlsx' file
+        expected_betas = {
+            "JPM" : 0.717344664,
+            "NVDA" : 2.384378483,
+            "LLY" : 0.599788671
+        }
+
+        tests = []
+
+        # Calculate the beta for each stock
+        for s, r in self.asset_returns.items():
+            actual_beta = self.stock_risk_engine.Beta(r, self.market_returns)
+
+            # Compare the actual beta vs the expected beta (within +/- 1% for rounding errors)
+            test_beta = abs(actual_beta - expected_betas[s]) / expected_betas[s] < 0.01
+            tests.append(test_beta)
+
+            if not test_beta:
+                print(f"{s} Beta test failed | Expected: {expected_betas[s]} | Actual: {actual_beta}")
+
+        if all(tests):
+            print("Beta(): All beta tests PASSED.")
+        else:
+            print("Beta(): FAILED...")
+
+        return test_counter
 
     def BasicPortfolioVAR_NonLog(self, test_counter: int) -> int:
         """
@@ -51,7 +98,7 @@ class UnitTest:
         expected_var_95 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_2)
         expected_var_90 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_3)
 
-        # Check actual vs expected (withing +/- 1% for rounding errors)
+        # Check actual vs expected (within +/- 1% for rounding errors)
         test_99 = abs(expected_var_99 - _ACTUAL_99_VAR) / _ACTUAL_99_VAR < 0.01
         test_95 = abs(expected_var_95 - _ACTUAL_95_VAR) / _ACTUAL_95_VAR < 0.01
         test_90 = abs(expected_var_90 - _ACTUAL_90_VAR) / _ACTUAL_90_VAR < 0.01
@@ -98,7 +145,7 @@ class UnitTest:
         expected_var_95 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_2, log_based=True)
         expected_var_90 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_3, log_based=True)
 
-        # Check actual vs expected (withing +/- 1% for rounding errors)
+        # Check actual vs expected (within +/- 1% for rounding errors)
         test_99 = abs(expected_var_99 - _ACTUAL_99_VAR) / _ACTUAL_99_VAR < 0.01
         test_95 = abs(expected_var_95 - _ACTUAL_95_VAR) / _ACTUAL_95_VAR < 0.01
         test_90 = abs(expected_var_90 - _ACTUAL_90_VAR) / _ACTUAL_90_VAR < 0.01
@@ -145,7 +192,7 @@ class UnitTest:
         expected_var_95 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_2, dollar_based=True)
         expected_var_90 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_3, dollar_based=True)
 
-        # Check actual vs expected (withing +/- 1% for rounding errors)
+        # Check actual vs expected (within +/- 1% for rounding errors)
         test_99 = abs(expected_var_99 - _ACTUAL_99_VAR) / _ACTUAL_99_VAR < 0.01
         test_95 = abs(expected_var_95 - _ACTUAL_95_VAR) / _ACTUAL_95_VAR < 0.01
         test_90 = abs(expected_var_90 - _ACTUAL_90_VAR) / _ACTUAL_90_VAR < 0.01
@@ -193,7 +240,13 @@ class UnitTest:
         print('Running Unit Tests...')
         print('------------------------------------------')
 
+        test_counter = self.Beta(test_counter)
         test_counter = self.BasicPortfolioVAR_NonLog(test_counter)
         test_counter = self.BasicPortfolioVAR_Log(test_counter)
         test_counter = self.BasicPortfolioVAR_Dollar(test_counter)
         test_counter = self.DisplayPortfolioStatistics(test_counter)
+
+        print('------------------------------------------')
+        print('Unit Tests Complete.')
+
+        # TODO: Create a result summary

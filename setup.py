@@ -9,7 +9,7 @@ setup(
         'matplotlib',
         'numpy',
         'scipy',
-        'scikit-learn',
+        'statsmodels',
         'yfinance',
     ],
     author='tzabcoder',
