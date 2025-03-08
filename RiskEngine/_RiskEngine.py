@@ -15,25 +15,28 @@ class RiskEngine:
     * RiskEngine
     *
     * The risk engine class sets up the risk analysis framework and directs the
-    * computation of any financial risk metric. The risk engine is the base class
-    * inherited by the variety of asset-specific risk engines.
+    * computation of financial risk metrics. The risk engine is the base class
+    * inherited by the variety of asset-specific risk engines. It primarily is an
+    * accessor for portfolio components and calculates statistical properties.
     """
 
     def __init__(self, portfolio_details: dict, market_prices: list):
         """
         * __init__()
         *
-        * Initializes the risk engine class variables.
+        * Initializes the stock risk engine and the base class.
         *
         * portfolio_details: details of the financial portfolio (symbols, shares, prices)
-        *                    each dict value index is matched accross all keys
+        *                    each dict value index is matched accross all keys, it is assumed that
+        *                    prices are DAILY prices.
         *   NOTE: portfolio_details dict must be in the form:
         *         {
         *           "Symbols" : [Symbol_1, Symbol_2, ..., Symbol_N],
         *           "Shares" : [Shares_1, Shares_2, ..., Shares_N],
         *           "Prices" : [[Prices_1], [Prices_2], ..., [Prices_N]]
         *         }
-        * market_prices: historical prices of the market portfolio (benchmark)
+        * market_prices: historical DAILY prices of the market portfolio (benchmark)
+        * NOTE: the market returns must be at least as long as the portfolio returns
         """
 
         self._portfolio_details = portfolio_details
@@ -43,10 +46,9 @@ class RiskEngine:
         calculate_asset_weights(self._portfolio_details)
 
         # Adds _portfolio_details['Returns']
-        # Adds _portfolio_details['Log_Returns']
         calculate_asset_returns(self._portfolio_details)
 
-        # Calculate the log-based daily returns
+        # Calculate the portfolio and market returns
         self._portfolio_returns = calculate_returns_from_holdings(self._portfolio_details)
         self._market_returns = calculate_returns(self._market_prices)
 
@@ -85,13 +87,6 @@ class RiskEngine:
         else:
             return None
 
-    @property
-    def portfolio_asset_log_returns(self) -> list:
-        if 'Log_Returns' in self._portfolio_details:
-            return self._portfolio_details['Log_Returns']
-        else:
-            return None
-
     ####################################################################
     # Portfolio Accessor Functions
     ####################################################################
@@ -110,24 +105,6 @@ class RiskEngine:
             return self.portfolio_asset_returns[index]
         else:
             raise ValueError(f"Symbol {symbol} not found in portfolio...")
-            return None
-
-    def get_asset_log_returns(self, symbol: str) -> list:
-        """
-        * get_asset_log_returns()
-        *
-        * Returns the asset log returns for a given symbol.
-        *
-        * symbol: the symbol of the asset
-        * :returns: the asset log returns for the given symbol
-        """
-
-        if symbol in self.portfolio_symbols:
-            index = self.portfolio_symbols.index(symbol)
-            return self.portfolio_asset_log_returns[index]
-        else:
-            raise ValueError(f"Symbol {symbol} not found in portfolio...")
-            return None
 
     def get_asset_prices(self, symbol: str) -> list:
         """
@@ -144,7 +121,6 @@ class RiskEngine:
             return self.portfolio_prices[index]
         else:
             raise ValueError(f"Symbol {symbol} not found in portfolio...")
-            return None
 
     def get_asset_weight(self, symbol: str) -> float:
         """
@@ -161,7 +137,6 @@ class RiskEngine:
             return self.portfolio_weights[index]
         else:
             raise ValueError(f"Symbol {symbol} not found in portfolio...")
-            return None
 
     def get_asset_shares(self, symbol: str) -> float:
         """
@@ -178,11 +153,25 @@ class RiskEngine:
             return self._portfolio_details['Shares'][index]
         else:
             raise ValueError(f"Symbol {symbol} not found in portfolio...")
-            return None
 
     ####################################################################
     # Statistical Functions
     ####################################################################
+    def covariance(self, arr1: list, arr2: list, sample: bool = True) -> float:
+        """
+        * covariance()
+        *
+        * Calculates the covariance between two lists: cov(arr1, arr2).
+        *
+        * arr1: list of numerical values
+        * arr2: list of numerical values
+        * sample: true if sample, false if population
+        * :returns: covariance coefficient
+        """
+
+        # Return the covariance coefficient
+        return np.cov(arr1, arr2, ddof=1 if sample else 0)[0][1]
+
     def critical_z_score(self, confidence_interval: float) -> float:
         """
         * critical_z_score()
@@ -204,7 +193,7 @@ class RiskEngine:
         """
         * mean()
         *
-        * Calculates the mean of a list
+        * Calculates the mean of a list.
         *
         * arr: list of numerical values
         * :returns: mean
@@ -216,7 +205,7 @@ class RiskEngine:
         """
         * variance()
         *
-        * Calculates the variance of a list
+        * Calculates the variance of a list.
         *
         * arr: list of numerical values
         * sample: true if sample, false if population
@@ -232,7 +221,7 @@ class RiskEngine:
         """
         * standard_deviation()
         *
-        * Calculates the standard deviation of a list
+        * Calculates the standard deviation of a list.
         *
         * arr: list of numerical values
         * sample: true if sample, false if population
@@ -245,7 +234,7 @@ class RiskEngine:
         """
         * skewness()
         *
-        * Calculates the skew of a list
+        * Calculates the skew of a list.
         *
         * arr: list of numerical values
         * sample: true if sample, false if population
@@ -267,7 +256,7 @@ class RiskEngine:
         """
         * kurtosis()
         *
-        * Calculates the kurtosis of a list
+        * Calculates the kurtosis of a list.
         *
         * arr: list of numerical values
         * sample: true if sample, false if population

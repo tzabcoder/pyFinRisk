@@ -65,15 +65,63 @@ class UnitTest:
                 print(f"{s} Beta test failed | Expected: {expected_betas[s]} | Actual: {actual_beta}")
 
         if all(tests):
-            print("Beta(): All beta tests PASSED.")
+            print("Beta(): All beta tests PASSED.\n")
         else:
-            print("Beta(): FAILED...")
+            print("Beta(): FAILED...\n")
 
         return test_counter
 
-    def BasicPortfolioVAR_NonLog(self, test_counter: int) -> int:
+    def IndividualVAR(self, test_counter: int) -> int:
         """
-        * BasicPortfolioVAR_NonLog()
+        * IndividualVAR()
+        *
+        * This function tests the basic individual VAR calculation.
+        * The function uses the test portfolio details and the 99%. 95% and 90% confidence
+        * intervals to calculate the each asset's VAR. The results are compared to the expected values that
+        * were calculated using the 'Portfolio_VAR.xlsx' file.
+        """
+
+        test_counter += 1
+        print(f"Running Test: IndividualVAR() - Test {test_counter}...")
+
+        confidence_intervals = [0.99, 0.95, 0.90]
+
+        # NOTE: These numbers were caculated manually using the 'Portfolio_VAR.xlsx' file
+        # _###_VAR[0] is at the 99% confidence interval
+        # _###_VAR[1] is at the 95% confidence interval
+        # _###_VAR[2] is at the 90% confidence interval
+        _EXPECTED_VALUES = {
+            "JPM" : [0.004048, 0.002867, 0.002224],
+            "NVDA" : [0.024213, 0.017147, 0.013302],
+            "LLY" : [0.021952, 0.015546, 0.012060]
+        }
+
+        all_tests = True
+
+        for i in range(len(self.portfolio_details['Symbols'])):
+            symbol = self.portfolio_details['Symbols'][i]
+            ci = confidence_intervals[i]
+
+            # Calculate the marginal VAR
+            actual_individual_var = self.stock_risk_engine.IndividualVAR(symbol, ci)
+
+            # Check actual vs expected (within +/- 1% for rounding errors)
+            test = abs(actual_individual_var - _EXPECTED_VALUES[symbol][i]) / _EXPECTED_VALUES[symbol][i] < 0.01
+
+            if not test:
+                print(f"{ci*100}% Individual VAR test failed | Actual: {actual_individual_var} | Expected: {_EXPECTED_VALUES[symbol][i]}")
+                all_tests = False
+
+        if all_tests:
+            print("IndividualVAR(): All VAR tests PASSED.\n")
+        else:
+            print("IndividualVAR(): FAILED...\n")
+
+        return test_counter
+
+    def BasicPortfolioVAR(self, test_counter: int) -> int:
+        """
+        * BasicPortfolioVAR()
         *
         * This function tests the basic portfolio VAR calculation.
         * The function uses the test portfolio details and the 99%. 95% and 90% confidence
@@ -82,133 +130,187 @@ class UnitTest:
         """
 
         test_counter += 1
-        print(f"Running Test: BasicPortfolioVAR_NonLog() - Test {test_counter}...")
+        print(f"Running Test: BasicPortfolioVAR() - Test {test_counter}...")
 
         confidence_1 = 0.99
         confidence_2 = 0.95
         confidence_3 = 0.90
 
         # NOTE: These numbers were caculated manually using the 'Portfolio_VAR.xlsx' file
-        _ACTUAL_99_VAR = 0.036805
-        _ACTUAL_95_VAR = 0.026064
-        _ACTUAL_90_VAR = 0.020219
+        _EXPECTED_99_VAR = 0.036805
+        _EXPECTED_95_VAR = 0.026064
+        _EXPECTED_90_VAR = 0.020219
 
         # Calculate the VAR at the confidence intervals
-        expected_var_99 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_1)
-        expected_var_95 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_2)
-        expected_var_90 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_3)
+        actual_var_99 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_1)
+        actual_var_95 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_2)
+        actual_var_90 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_3)
 
         # Check actual vs expected (within +/- 1% for rounding errors)
-        test_99 = abs(expected_var_99 - _ACTUAL_99_VAR) / _ACTUAL_99_VAR < 0.01
-        test_95 = abs(expected_var_95 - _ACTUAL_95_VAR) / _ACTUAL_95_VAR < 0.01
-        test_90 = abs(expected_var_90 - _ACTUAL_90_VAR) / _ACTUAL_90_VAR < 0.01
+        test_99 = abs(actual_var_99 - _EXPECTED_99_VAR) / _EXPECTED_99_VAR < 0.01
+        test_95 = abs(actual_var_95 - _EXPECTED_95_VAR) / _EXPECTED_95_VAR < 0.01
+        test_90 = abs(actual_var_90 - _EXPECTED_90_VAR) / _EXPECTED_90_VAR < 0.01
 
         if not test_99:
-            print(f"90% VAR test failed | Expected: {expected_var_90} | Actual: {_ACTUAL_90_VAR}")
+            print(f"99% VAR test failed | Actual: {actual_var_99} | Expected: {_EXPECTED_99_VAR}")
         if not test_95:
-            print(f"90% VAR test failed | Expected: {expected_var_95} | Actual: {_ACTUAL_95_VAR}")
+            print(f"95% VAR test failed | Actual: {actual_var_95} | Expected: {_EXPECTED_95_VAR}")
         if not test_90:
-            print(f"90% VAR test failed | Expected: {expected_var_99} | Actual: {_ACTUAL_99_VAR}")
+            print(f"90% VAR test failed | Actual: {actual_var_90} | Expected: {_EXPECTED_90_VAR}")
 
         if all([test_99, test_95, test_90]):
             # All tests passed
-            print("BasicPortfolioVAR_NonLog(): All VAR tests PASSED.")
+            print("BasicPortfolioVAR(): All VAR tests PASSED.\n")
         else:
-            print("BasicPortfolioVAR_NonLog(): FAILED...")
+            print("BasicPortfolioVAR(): FAILED...\n")
 
         return test_counter
 
-    def BasicPortfolioVAR_Log(self, test_counter: int) -> int:
+    def MarginalLocalVAR(self, test_counter: int) -> int:
         """
-        * BasicPortfolioVAR_Log()
+        * MarginalLocalVAR()
         *
-        * This function tests the basic portfolio VAR calculation using log returns.
+        * This function tests the marginal VAR calculation.
         * The function uses the test portfolio details and the 99%. 95% and 90% confidence
         * intervals to calculate the VAR. The results are compared to the expected values that
         * were calculated using the 'Portfolio_VAR.xlsx' file.
         """
 
         test_counter += 1
-        print(f"Running Test: BasicPortfolioVAR_Log() - Test {test_counter}...")
+        print(f"Running Test: MarginalLocalVAR() - Test {test_counter}...")
 
-        confidence_1 = 0.99
-        confidence_2 = 0.95
-        confidence_3 = 0.90
+        confidence_intervals = [0.99, 0.95, 0.90]
 
         # NOTE: These numbers were caculated manually using the 'Portfolio_VAR.xlsx' file
-        _ACTUAL_99_VAR = 0.015644
-        _ACTUAL_95_VAR = 0.011078
-        _ACTUAL_90_VAR = 0.008594
+        # _###_VAR[0] is at the 99% confidence interval
+        # _###_VAR[1] is at the 95% confidence interval
+        # _###_VAR[2] is at the 90% confidence interval
+        _EXPECTED_VALUES = {
+            "JPM" : [0.026402068, 0.018696743, 0.01450414],
+            "NVDA" : [0.087757707, 0.062146016, 0.048210243],
+            "LLY" : [0.022075387, 0.015632785, 0.012127]
+        }
 
-        # Calculate the VAR at the confidence intervals
-        expected_var_99 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_1, log_based=True)
-        expected_var_95 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_2, log_based=True)
-        expected_var_90 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_3, log_based=True)
+        all_tests = True
 
-        # Check actual vs expected (within +/- 1% for rounding errors)
-        test_99 = abs(expected_var_99 - _ACTUAL_99_VAR) / _ACTUAL_99_VAR < 0.01
-        test_95 = abs(expected_var_95 - _ACTUAL_95_VAR) / _ACTUAL_95_VAR < 0.01
-        test_90 = abs(expected_var_90 - _ACTUAL_90_VAR) / _ACTUAL_90_VAR < 0.01
+        for i in range(len(self.portfolio_details['Symbols'])):
+            symbol = self.portfolio_details['Symbols'][i]
+            ci = confidence_intervals[i]
 
-        if not test_99:
-            print(f"90% VAR test failed | Expected: {expected_var_90} | Actual: {_ACTUAL_90_VAR}")
-        if not test_95:
-            print(f"90% VAR test failed | Expected: {expected_var_95} | Actual: {_ACTUAL_95_VAR}")
-        if not test_90:
-            print(f"90% VAR test failed | Expected: {expected_var_99} | Actual: {_ACTUAL_99_VAR}")
+            # Calculate the marginal VAR
+            actual_marginal_var = self.stock_risk_engine.MarginalLocalVAR(symbol, ci)
 
-        if all([test_99, test_95, test_90]):
-            # All tests passed
-            print("BasicPortfolioVAR_Log(): All VAR tests PASSED.")
+            # Check actual vs expected (within +/- 1% for rounding errors)
+            test = abs(actual_marginal_var - _EXPECTED_VALUES[symbol][i]) / _EXPECTED_VALUES[symbol][i] < 0.01
+
+            if not test:
+                print(f"{ci*100}% Marginal VAR test failed | Actual: {actual_marginal_var} | Expected: {_EXPECTED_VALUES[symbol][i]}")
+                all_tests = False
+
+        if all_tests:
+            print("MarginalLocalVAR(): All VAR tests PASSED.\n")
         else:
-            print("BasicPortfolioVAR_Log(): FAILED...")
+            print("MarginalLocalVAR(): FAILED...\n")
 
         return test_counter
 
-    def BasicPortfolioVAR_Dollar(self, test_counter: int) -> int:
+    def IncrementalLocalVAR(self, test_counter: int) -> int:
         """
-        * BasicPortfolioVAR_Dollar()
+        * IncrementalLocalVAR()
         *
-        * This function tests the basic portfolio VAR calculation using dollar-based VAR.
+        * This function tests the incremental VAR calculation.
         * The function uses the test portfolio details and the 99%. 95% and 90% confidence
         * intervals to calculate the VAR. The results are compared to the expected values that
         * were calculated using the 'Portfolio_VAR.xlsx' file.
         """
 
         test_counter += 1
-        print(f"Running Test: BasicPortfolioVAR_Dollar() - Test {test_counter}...")
+        print(f"Running Test: IncrementalLocalVAR() - Test {test_counter}...")
 
-        confidence_1 = 0.99
-        confidence_2 = 0.95
-        confidence_3 = 0.90
+        confidence_intervals = [0.99, 0.95, 0.90]
+
+        #                 JPM    NVDA   LLY
+        weight_changes = [0.083, 0.167, -0.25]
 
         # NOTE: These numbers were caculated manually using the 'Portfolio_VAR.xlsx' file
-        _ACTUAL_99_VAR = 101303.95
-        _ACTUAL_95_VAR = 71738.85
-        _ACTUAL_90_VAR = 55651.95
+        # _###_VAR[0] is at the 99% confidence interval
+        # _###_VAR[1] is at the 95% confidence interval
+        # _###_VAR[2] is at the 90% confidence interval
+        _EXPECTED_VALUES = {
+            "JPM" : [0.002191372, 0.00155183, 0.001203844],
+            "NVDA" : [0.014655537, 0.010378385, 0.008051111],
+            "LLY" : [-0.005518847, -0.003908196, -0.003031813]
+        }
 
-        # Calculate the VAR at the confidence intervals
-        expected_var_99 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_1, dollar_based=True)
-        expected_var_95 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_2, dollar_based=True)
-        expected_var_90 = self.stock_risk_engine.BasicPortfolioVAR(confidence_interval=confidence_3, dollar_based=True)
+        all_tests = True
 
-        # Check actual vs expected (within +/- 1% for rounding errors)
-        test_99 = abs(expected_var_99 - _ACTUAL_99_VAR) / _ACTUAL_99_VAR < 0.01
-        test_95 = abs(expected_var_95 - _ACTUAL_95_VAR) / _ACTUAL_95_VAR < 0.01
-        test_90 = abs(expected_var_90 - _ACTUAL_90_VAR) / _ACTUAL_90_VAR < 0.01
+        for i in range(len(self.portfolio_details['Symbols'])):
+            symbol = self.portfolio_details['Symbols'][i]
+            ci = confidence_intervals[i]
+            delta = weight_changes[i]
 
-        if not test_99:
-            print(f"90% VAR test failed | Expected: {expected_var_90} | Actual: {_ACTUAL_90_VAR}")
-        if not test_95:
-            print(f"90% VAR test failed | Expected: {expected_var_95} | Actual: {_ACTUAL_95_VAR}")
-        if not test_90:
-            print(f"90% VAR test failed | Expected: {expected_var_99} | Actual: {_ACTUAL_99_VAR}")
+            # Calculate the incremental VAR
+            actual_incremental_var = self.stock_risk_engine.IncrementalLocalVAR(symbol, delta, ci)
 
-        if all([test_99, test_95, test_90]):
-            # All tests passed
-            print("BasicPortfolioVAR_Dollar(): All VAR tests PASSED.")
+            # Check actual vs expected (within +/- 1% for rounding errors)
+            test = abs(actual_incremental_var - _EXPECTED_VALUES[symbol][i]) / _EXPECTED_VALUES[symbol][i] < 0.01
+
+            if not test:
+                print(f"{ci*100}% Incremental VAR test failed | Actual: {actual_incremental_var} | Expected: {_EXPECTED_VALUES[symbol][i]}")
+                all_tests = False
+
+        if all_tests:
+            print("IncrementalLocalVAR(): All VAR tests PASSED.\n")
         else:
-            print("BasicPortfolioVAR_Dollar(): FAILED...")
+            print("IncrementalLocalVAR(): FAILED...\n")
+
+        return test_counter
+
+    def ComponentLocalVAR(self, test_counter: int) -> int:
+        """
+        * ComponentLocalVAR()
+        *
+        * This function tests the component VAR calculation.
+        * The function uses the test portfolio details and the 99%. 95% and 90% confidence
+        * intervals to calculate the VAR. The results are compared to the expected values that
+        * were calculated using the 'Portfolio_VAR.xlsx' file.
+        """
+
+        test_counter += 1
+        print(f"Running Test: ComponentLocalVAR() - Test {test_counter}...")
+
+        confidence_intervals = [0.99, 0.95, 0.90]
+
+        # NOTE: These numbers were caculated manually using the 'Portfolio_VAR.xlsx' file
+        # _###_VAR[0] is at the 99% confidence interval
+        # _###_VAR[1] is at the 95% confidence interval
+        # _###_VAR[2] is at the 90% confidence interval
+        _EXPECTED_VALUES = {
+            "JPM" : [0.004409145, 0.003122356, 0.002422191],
+            "NVDA" : [0.029223316, 0.020694623, 0.016054011],
+            "LLY" : [0.011037694, 0.007816393, 0.006063626]
+        }
+
+        all_tests = True
+
+        for i in range(len(self.portfolio_details['Symbols'])):
+            symbol = self.portfolio_details['Symbols'][i]
+            ci = confidence_intervals[i]
+
+            # Calculate the incremental VAR
+            actual_component_var = self.stock_risk_engine.ComponentLocalVAR(symbol, ci)
+
+            # Check actual vs expected (within +/- 1% for rounding errors)
+            test = abs(actual_component_var - _EXPECTED_VALUES[symbol][i]) / _EXPECTED_VALUES[symbol][i] < 0.01
+
+            if not test:
+                print(f"{ci*100}% Component VAR test failed | Actual: {actual_component_var} | Expected: {_EXPECTED_VALUES[symbol][i]}")
+                all_tests = False
+
+        if all_tests:
+            print("ComponentLocalVAR(): All VAR tests PASSED.\n")
+        else:
+            print("ComponentLocalVAR(): FAILED...\n")
 
         return test_counter
 
@@ -241,9 +343,11 @@ class UnitTest:
         print('------------------------------------------')
 
         test_counter = self.Beta(test_counter)
-        test_counter = self.BasicPortfolioVAR_NonLog(test_counter)
-        test_counter = self.BasicPortfolioVAR_Log(test_counter)
-        test_counter = self.BasicPortfolioVAR_Dollar(test_counter)
+        test_counter = self.IndividualVAR(test_counter)
+        test_counter = self.BasicPortfolioVAR(test_counter)
+        test_counter = self.MarginalLocalVAR(test_counter)
+        test_counter = self.IncrementalLocalVAR(test_counter)
+        test_counter = self.ComponentLocalVAR(test_counter)
         test_counter = self.DisplayPortfolioStatistics(test_counter)
 
         print('------------------------------------------')

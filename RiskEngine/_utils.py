@@ -5,7 +5,7 @@ def calculate_returns(prices: list) -> list:
     """
     * calculate_returns()
     *
-    * Calculates the returns from a list of prices
+    * Calculates the returns from a list of prices.
     *
     * prices: list of asset prices
     * :returns: a list of period returns
@@ -19,51 +19,31 @@ def calculate_returns(prices: list) -> list:
 
     return returns[1:].tolist()
 
-def calculate_log_returns(prices: list) -> list:
-    """
-    * calculate_log_returns()
-    *
-    * Calculates the log returns from a list of prices
-    *
-    * prices: list of asset prices
-    * :returns: a list of period log returns
-    """
-
-    prices = np.array(prices)
-    shifted_prices = np.roll(prices, 1)
-
-    log_returns = np.log(prices / shifted_prices)
-
-    return log_returns[1:].tolist()
-
 def calculate_asset_returns(portfolio_details: dict):
     """
     * calculate_asset_returns()
     *
     * Calculates the individual asset returns from a complete portfolio
-    * The parameter is passed by reference
+    * The parameter is passed by reference.
     *
     * portfolio_details: details of the complete portfolio
     """
 
     returns = []
-    log_returns = []
     asset_prices = portfolio_details['Prices']
 
     for prices in asset_prices:
         returns.append(calculate_returns(prices))
-        log_returns.append(calculate_log_returns(prices))
 
     # Set the asset returns
     portfolio_details['Returns'] = returns
-    portfolio_details['Log_Returns'] = log_returns
 
 def calculate_asset_weights(portfolio_details: dict):
     """
     * calculate_asset_weights()
     *
     * Calculates the individual asset weights from per-share holdings.
-    * The parameter is passed by reference
+    * The parameter is passed by reference.
     *
     * portfolio_details: details of the complete portfolio
     """
@@ -112,7 +92,7 @@ def calculate_portfolio_value(portfolio_shares: list, portfolio_prices: list) ->
     """
     * calculate_portfolio_value()
     *
-    * Calculates the portfolio value from the portfolio shares and prices
+    * Calculates the portfolio value from the portfolio shares and prices.
     *
     * portfolio_shares: list of portfolio shares
     * portfolio_prices: list of portfolio prices

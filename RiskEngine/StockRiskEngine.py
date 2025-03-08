@@ -16,11 +16,9 @@ class StockRiskEngine(RiskEngine):
     * StockRiskEngine(RiskEngine)
     *
     * The stock risk engine is the framework for calculating all financial risk
-    * metrics associated with an equity-based portfolio.
+    * metrics associated with an equity-based portfolio. Each component of the financial
+    * portfolio is considered a risk factor.
     """
-
-    # Constants
-    _TRADING_DAYS = 252
 
     def __init__(self, portfolio_details: dict, market_prices: list):
         """
@@ -29,15 +27,16 @@ class StockRiskEngine(RiskEngine):
         * Initializes the stock risk engine and the base class.
         *
         * portfolio_details: details of the financial portfolio (symbols, shares, prices)
-        *                    each dict value index is matched accross all keys
+        *                    each dict value index is matched accross all keys, it is assumed that
+        *                    prices are DAILY prices.
         *   NOTE: portfolio_details dict must be in the form:
         *         {
         *           "Symbols" : [Symbol_1, Symbol_2, ..., Symbol_N],
         *           "Shares" : [Shares_1, Shares_2, ..., Shares_N],
         *           "Prices" : [[Prices_1], [Prices_2], ..., [Prices_N]]
         *         }
-        * market_prices: historical prices of the market portfolio (benchmark)
-        *   NOTE: the market returns must be at least as long as the portfolio returns
+        * market_prices: historical DAILY prices of the market portfolio (benchmark)
+        * NOTE: the market returns must be at least as long as the portfolio returns
         """
 
         RiskEngine.__init__(self, portfolio_details, market_prices)
@@ -94,6 +93,7 @@ class StockRiskEngine(RiskEngine):
         * returns vs. the market and the distribution of historical returns.
         *
         * plot: flag to plot the portfolio statistics
+        * :return: None
         """
 
         # Calculate the portfolio statistics
@@ -142,7 +142,7 @@ class StockRiskEngine(RiskEngine):
     ####################################################################
     # Value at Risk Functions
     ####################################################################
-    def IndividualVAR(self, symbol: str, confidence_interval: float = 0.99, log_based: bool = False) -> float:
+    def IndividualVAR(self, symbol: str, confidence_interval: float = 0.99) -> float:
         """
         * IndividualVAR()
         *
@@ -152,60 +152,42 @@ class StockRiskEngine(RiskEngine):
         *  VAR = sd * z * w
         *
         * confidence_interval: confidence interval for the VAR calculation
-        * log_based: if True, use log returns, else use simple returns
         * :returns: the individual VAR, None if failure
         """
 
         # Validate confidence interval
         if confidence_interval <= 0.01 or confidence_interval >= 1:
             raise ValueError('Confidence interval must be greater than 0 and less than 1...')
-            return None
 
         # Get the asset returns
-        if log_based:
-            asset_return = self.get_asset_log_returns(symbol)
-        else:
-            asset_return = self.get_asset_returns(symbol)
+        asset_return = self.get_asset_returns(symbol)
 
         # Get the asset weight
         asset_weight = self.get_asset_weight(symbol)
 
-        # Calculate the annualized individual portfolio risk
-        stddev = self.standard_deviation(asset_return) * math.sqrt(self._TRADING_DAYS)
+        # Calculate the individual portfolio risk
+        stddev = self.standard_deviation(asset_return)
 
-        if dollar_based:
-            # Get the asset price and shares
-            recent_price = self.get_asset_prices(symbol)[-1]
-            tota_shares = self.get_asset_shares(symbol)
+        var = stddev * self.critical_z_score(confidence_interval) * asset_weight
 
-            # Calculate the individual VAR
-            var = stddev * self.critical_z_score(confidence_interval)
+        return var
 
-            # Return the dollar-based VAR
-            return var * recent_price * total_shares
-        else:
-            # Calculate the individual VAR
-            var = stddev * self.critical_z_score(confidence_interval) * asset_weight
-
-            return var
-
-    def BasicPortfolioVAR(self, confidence_interval: float = 0.99, log_based: bool = False, dollar_based: bool = False) -> float:
+    def BasicPortfolioVAR(self, confidence_interval: float = 0.99, dollar_based: bool = False) -> float:
         """
         * BasicPortfolioVAR()
         *
         * Calculates the basic portfolio value at risk (VAR) using the covariance
         * matrix of the portfolio's assets. This method calculates VAR based on its
         * historical asset returns.
-        * The portfolio variance is calclated as:
+        * The portfolio variance is calculated as:
         *  V = w * COV * w'
         * The portfolio risk is then calculated as:
         *  R = sqrt(V)
         * The VAR is then calculated as:
         *  VAR = R * z
-        * where z is the z-score of the confidence interval.
+        * where z is the critical z-score of the confidence interval.
         *
         * confidence_interval: confidence interval for the VAR calculation
-        * log_based: if True, use log returns, else use simple returns
         * dollar_based: if True, use dollar based VAR, else use percentage based VAR
         * :returns: the basic portfolio VAR, None if failure
         """
@@ -213,18 +195,14 @@ class StockRiskEngine(RiskEngine):
         # Validate confidence interval
         if confidence_interval <= 0.01 or confidence_interval >= 1:
             raise ValueError('Confidence interval must be greater than 0 and less than 1...')
-            return None
 
-        # Calculate the coariance matrix
-        if log_based:
-            cov_matrix = np.cov(self.portfolio_asset_log_returns, rowvar = True)
-        else:
-            cov_matrix = np.cov(self.portfolio_asset_returns, rowvar = True)
+        # Calculate the covariance matrix
+        cov_matrix = np.cov(self.portfolio_asset_returns, rowvar = True)
 
         # Variance of portfolio rate of return
         portfolio_variance = self.portfolio_weights @ cov_matrix @ np.transpose(self.portfolio_weights)
 
-        # Callculate the portfolio risk
+        # Calculate the portfolio risk
         portfolio_risk = math.sqrt(portfolio_variance)
 
         # Calculate and return the basic VAR
@@ -235,35 +213,107 @@ class StockRiskEngine(RiskEngine):
         else:
             return var
 
-    def MarginalLocalVAR(self, symbol: str) -> float:
+    def MarginalLocalVAR(self, symbol: str, confidence_interval: float = 0.99, dollar_based: bool = False) -> float:
         """
         * MarginalLocalVAR()
         *
-        * Calculates the marginal local value at risk (VAR) for an asset using the
-        * basic VAR of the portfolio and the beta of the asset. The Marginal VAR measures
-        * the change in portfolio VAR as a result from taking additional dollar exposure
-        * to a given component.
+        * Calculates the marginal local value at risk (MVAR) for an asset using the
+        * portfolio's return standard deviations, beta of the asset's returns, and the
+        * risk of the portfolio.
+        * The marginal VAR calculates the change in portfolio VAR when an asset's weight changes marginally.
+        *
+        * Ex: If the MVaR for the asset is 2%, then the portfolio VaR will increase by 2% if the
+        *     asset's weight increases marginally.
         *
         * symbol: symbol of the asset to calculate the marginal VAR
-        * :returns: the marginal local VAR (in dollar terms), None if failure
+        * confidence_interval: confidence interval for the VAR calculation
+        * dollar_based: if True, return the portfolio VAR change in dollars, else return in percentage
+        * :returns: the marginal local VAR (in absolute return terms), None if failure
         """
 
-        asset_return = self.get_asset_returns(symbol)
+        # Validate the confidence interval
+        if confidence_interval <= 0.01 or confidence_interval >= 1:
+            raise ValueError('Confidence interval must be greater than 0 and less than 1...')
 
-        # Calculate the beta of the individual position
-        beta_i = self.Beta(asset_return, self.market_returns)
+        # Calculate the CRITICAL z-score
+        z_score = self.critical_z_score(confidence_interval)
 
-        # Calculate the dollar basic VAR of the portfolio
-        basic_var = self.BasicPortfolioVAR(dollar_based=True)
+        # Calculate the portfolio VAR
+        portfolio_var = self.BasicPortfolioVAR(confidence_interval, dollar_based = False)
 
-        if beta_i is None or basic_var is None:
-            marginal_var = None
+        beta = self.Beta(self.get_asset_returns(symbol), self.market_returns)
 
+        # Calculate the marginal VAR
+        m_var = beta * portfolio_var
+
+        if dollar_based:
+            return m_var * calculate_portfolio_value(self.portfolio_shares, self.portfolio_prices)
         else:
-            marginal_var = (basic_var / self.calculate_portfolio_value(self.portfolio_shares, self.portfolio_prices)) * beta_i
+            return m_var
 
-        # Returns the marginal VAR for the asset
-        return marginal_var
+    def IncrementalLocalVAR(self, symbol: str, weight_change: float, confidence_interval: float = 0.99, dollar_based: bool = False) -> float:
+        """
+        * IncrementalLocalVAR()
+        *
+        * Calculates the incremental local value at risk (IVAR) for an asset using the new
+        * weight of the asset and the marginal value at risk (MVAR).
+        * The incremental VAR approximates the change in portfolio VAR when an asset's weight changes
+        * significantly.
+        *
+        * Ex: If the IVaR for the asset is 1%, then the approximate impact on the portfolio VaR by
+        *     changing the risk factor's weight by N% is N% * 1% assuming a linear approximation for
+        *     small changes.
+        *
+        * symbol: symbol of the asset to calculate the incremental VAR
+        * weight_change: change in weight of the position (+/-)
+        * confidence_interval: confidence interval for the VAR calculation
+        * dollar_based: if True, return the portfolio VAR change in dollars, else return in percentage
+        * :returns: the incremental local VAR (in absolute return terms), None if failure
+        """
 
-    def ConditionalLocalVAR(self):
-        pass
+        # Validate the confidence interval
+        if confidence_interval <= 0.01 or confidence_interval >= 1:
+            raise ValueError('Confidence interval must be greater than 0 and less than 1...')
+
+        # Calculate the marginal VaR for the position
+        m_var = self.MarginalLocalVAR(symbol, confidence_interval)
+
+        # Calculate the incremental VAR
+        i_var = m_var * weight_change
+
+        if dollar_based:
+            return i_var * calculate_portfolio_value(self.portfolio_shares, self.portfolio_prices)
+        else:
+            return i_var
+
+    def ComponentLocalVAR(self, symbol: str, confidence_interval: float = 0.99, dollar_based: bool = False) -> float:
+        """
+        * ComponentLocalVAR()
+        *
+        * Calculates the components local value at risk (VAR) for an asset using the VAR,
+        * the beta of the risk factor, and the weight of the risk factor.
+        *
+        * The component VaR approximates how much the portfolio VaR would change if the component
+        * was removed from the portfolio.
+        *
+        * symbol: symbol of the asset to calculate the component VAR
+        * confidence_interval: confidence interval for the VAR calculation
+        * dollar_based: if True, return the portfolio VAR change in dollars, else return in percentage
+        * :returns: the component local VAR (in absolute return terms), None if failure
+        """
+
+        # Validate the confidence interval
+        if confidence_interval <= 0.01 or confidence_interval >= 1:
+            raise ValueError('Confidence interval must be greater than 0 and less than 1...')
+
+        # Calculate the component's beta
+        beta = self.Beta(self.get_asset_returns(symbol), self.market_returns)
+        weight = self.get_asset_weight(symbol)
+
+        # Calculate the component VaR
+        c_var = self.BasicPortfolioVAR(confidence_interval) * beta * weight
+
+        if dollar_based:
+            return c_var * calculate_portfolio_value(self.portfolio_shares, self.portfolio_prices)
+        else:
+            return c_var
