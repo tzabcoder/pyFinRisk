@@ -68,6 +68,7 @@ class UnitTest:
             print("Beta(): All beta tests PASSED.\n")
         else:
             print("Beta(): FAILED...\n")
+            test_counter -= 1
 
         return test_counter
 
@@ -116,6 +117,7 @@ class UnitTest:
             print("IndividualVAR(): All VAR tests PASSED.\n")
         else:
             print("IndividualVAR(): FAILED...\n")
+            test_counter -= 1
 
         return test_counter
 
@@ -163,6 +165,7 @@ class UnitTest:
             print("BasicPortfolioVAR(): All VAR tests PASSED.\n")
         else:
             print("BasicPortfolioVAR(): FAILED...\n")
+            test_counter -= 1
 
         return test_counter
 
@@ -211,6 +214,7 @@ class UnitTest:
             print("MarginalLocalVAR(): All VAR tests PASSED.\n")
         else:
             print("MarginalLocalVAR(): FAILED...\n")
+            test_counter -= 1
 
         return test_counter
 
@@ -263,6 +267,7 @@ class UnitTest:
             print("IncrementalLocalVAR(): All VAR tests PASSED.\n")
         else:
             print("IncrementalLocalVAR(): FAILED...\n")
+            test_counter -= 1
 
         return test_counter
 
@@ -311,6 +316,7 @@ class UnitTest:
             print("ComponentLocalVAR(): All VAR tests PASSED.\n")
         else:
             print("ComponentLocalVAR(): FAILED...\n")
+            test_counter -= 1
 
         return test_counter
 
@@ -338,19 +344,33 @@ class UnitTest:
         """
 
         test_counter = 0
+        total_tests = 0
 
         print('Running Unit Tests...')
         print('------------------------------------------')
 
         test_counter = self.Beta(test_counter)
+        total_tests += 1
         test_counter = self.IndividualVAR(test_counter)
+        total_tests += 1
         test_counter = self.BasicPortfolioVAR(test_counter)
+        total_tests += 1
         test_counter = self.MarginalLocalVAR(test_counter)
+        total_tests += 1
         test_counter = self.IncrementalLocalVAR(test_counter)
+        total_tests += 1
         test_counter = self.ComponentLocalVAR(test_counter)
+        total_tests += 1
         test_counter = self.DisplayPortfolioStatistics(test_counter)
+        total_tests += 1
 
         print('------------------------------------------')
-        print('Unit Tests Complete.')
+        print('Unit Tests Complete. Results:')
 
-        # TODO: Create a result summary
+        if test_counter == total_tests:
+            print('ALL TESTS PASSED.')
+        else:
+            print(f"{total_tests-test_counter} TESTS FAILED.")
+
+        print(f'Tests Ran: {total_tests} | Tests Passed: {test_counter}')
+        print(f'Pass Rate: {round((test_counter / total_tests)*100, 4)}%')
