@@ -26,7 +26,7 @@ $$
 Portfolio\hspace{0.1cm}VaR = ασ_pw = α\sqrt{w'Σw}
 $$
 
-* **Marginal VaR** - *Change* in Portfolio VaR resulting from taking adiitional (marginal) exposure to a given risk factor. Partial (linear) derivative with respect to the component's position.
+* **Marginal VaR** - *Change* in Portfolio VaR resulting from taking additional (marginal) exposure to a given risk factor. Partial (linear) derivative with respect to the component's position.
 
 $$
 ΔVaR_i=\frac{δVaR}{δw_i}=α(β_i*σ_p)=\frac{VaR}{W}*β_i
@@ -34,13 +34,13 @@ $$
 
 where $β_i$ is the component beta, and $W$ is the complete portfolio value (marked-to-market).
 
-* **Incremental VaR** - *Change* in Portfolio VaR resulting from the midification of a portfolio component.
+* **Incremental VaR** - *Change* in Portfolio VaR resulting from the modification of a portfolio component.
 
 $$
 IVaR_i = ΔVaR_i*a
 $$
 
-where a is a change, either positive or negative, in the component. It must be noted that this is only approximation.
+where a is a change, either positive or negative, in the component. It must be noted that this is only an approximation.
 
 * **Component VaR** - *Change* in Portfolio VaR resulting from the removal of a risk factor.
 
@@ -131,15 +131,18 @@ incremental_var = riskEngine.IncrementalLocalVAR(symbol='COST', weight_change=0.
 component_var = riskEngine.ComponentLocalVAR(symbol='LLY')
 ```
 
-
 **Testing**
 
 ---
 
-For running the unit tests, run the following command from the top-level directory:
+For running the unit tests, execute the following command from the top-level directory:
 
 `python -m test.test`
 
+
+For running the example, execute the following command from the top-level directory:
+
+`python -m examples.stock_risk_ex`
 
 **Contributing**
 

@@ -1,0 +1,12 @@
+matplotlib==3.10.1
+numpy==2.2.3
+pandas==2.2.3
+pyFinRisk==0.1
+pytest==8.3.4
+pytz==2025.1
+requests==2.32.3
+scikit-learn==1.6.1
+scipy==1.15.2
+setuptools==75.8.2
+statsmodels==0.14.4
+yfinance==0.2.54
