@@ -44,8 +44,8 @@ riskEngine.DisplayPortfolioStatistics(plot=True)
 individual_var = riskEngine.IndividualVAR(symbol='JPM', confidence_interval=0.95)
 
 # Calculate the Portfolio VaR
-portfolio_var_pct = riskEngine.BasicPortfolioVAR(confidence_interval=0.99) # Returns %
-portfolio_var_dollar = riskEngine.BasicPortfolioVAR(confidence_interval=0.99, dollar_based=True) # Returns $
+portfolio_var_pct = riskEngine.PortfolioVAR(confidence_interval=0.99) # Returns %
+portfolio_var_dollar = riskEngine.PortfolioVAR(confidence_interval=0.99, dollar_based=True) # Returns $
 
 # Calculate the Marginal VaR
 marginal_var = riskEngine.MarginalLocalVAR(symbol='AAPL')

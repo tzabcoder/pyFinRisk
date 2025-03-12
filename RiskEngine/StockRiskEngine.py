@@ -140,7 +140,7 @@ class StockRiskEngine(RiskEngine):
             plt.show()
 
     ####################################################################
-    # Value at Risk Functions
+    # Historical Value at Risk Functions
     ####################################################################
     def IndividualVAR(self, symbol: str, confidence_interval: float = 0.99) -> float:
         """
@@ -172,9 +172,9 @@ class StockRiskEngine(RiskEngine):
 
         return var
 
-    def BasicPortfolioVAR(self, confidence_interval: float = 0.99, dollar_based: bool = False) -> float:
+    def PortfolioVAR(self, confidence_interval: float = 0.99, dollar_based: bool = False) -> float:
         """
-        * BasicPortfolioVAR()
+        * PortfolioVAR()
         *
         * Calculates the basic portfolio value at risk (VAR) using the covariance
         * matrix of the portfolio's assets. This method calculates VAR based on its
@@ -213,6 +213,34 @@ class StockRiskEngine(RiskEngine):
         else:
             return var
 
+    def ConditionalVAR(self, confidence_interval: float = 0.99, dollar_based: bool = False) -> float:
+        """
+        * ConditionalVAR()
+        *
+        * Calculates the conditional value at risk (CVAR) for the portfolio.
+        * CVAR measures the expected loss that exceeds the VAR's threshold, and provides
+        * an estimate of the average loss in extreme scenarios beyond the VAR limit.
+        *
+        * confidence_interval: confidence interval for the VAR calculation
+        * dollar_based: if True, return the portfolio VAR change in dollars, else return in percentage
+        * :returns: the conditional VAR (in absolute return terms), None if failure
+        """
+
+        # Sort the portfolio returns from smallest to largest
+        portfolio_returns = sorted(self.portfolio_returns)
+
+        # Calculate the VAR threshold
+        observations = len(portfolio_returns)
+        threshold = int(observations * (1 - confidence_interval))
+
+        # Calculate conditional VaR (CVaR)
+        c_var = portfolio_returns[threshold]
+
+        if dollar_based:
+            return c_var * calculate_portfolio_value(self.portfolio_shares, self.portfolio_prices)
+        else:
+            return c_var
+
     def MarginalLocalVAR(self, symbol: str, confidence_interval: float = 0.99, dollar_based: bool = False) -> float:
         """
         * MarginalLocalVAR()
@@ -239,7 +267,7 @@ class StockRiskEngine(RiskEngine):
         z_score = self.critical_z_score(confidence_interval)
 
         # Calculate the portfolio VAR
-        portfolio_var = self.BasicPortfolioVAR(confidence_interval, dollar_based = False)
+        portfolio_var = self.PortfolioVAR(confidence_interval, dollar_based = False)
 
         beta = self.Beta(self.get_asset_returns(symbol), self.market_returns)
 
@@ -311,7 +339,7 @@ class StockRiskEngine(RiskEngine):
         weight = self.get_asset_weight(symbol)
 
         # Calculate the component VaR
-        c_var = self.BasicPortfolioVAR(confidence_interval) * beta * weight
+        c_var = self.PortfolioVAR(confidence_interval) * beta * weight
 
         if dollar_based:
             return c_var * calculate_portfolio_value(self.portfolio_shares, self.portfolio_prices)
