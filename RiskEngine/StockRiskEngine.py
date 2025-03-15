@@ -2,6 +2,7 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import norm
 import statsmodels.api as sm
 from statsmodels import regression
 
@@ -10,6 +11,9 @@ from RiskEngine._RiskEngine import RiskEngine
 from RiskEngine._utils import (
     calculate_portfolio_value
 )
+
+# Settings
+plt.style.use('ggplot')
 
 class StockRiskEngine(RiskEngine):
     """
@@ -20,7 +24,7 @@ class StockRiskEngine(RiskEngine):
     * portfolio is considered a risk factor.
     """
 
-    def __init__(self, portfolio_details: dict, market_prices: list):
+    def __init__(self, portfolio_details: dict, market_prices: list) -> None:
         """
         * __init__()
         *
@@ -96,7 +100,7 @@ class StockRiskEngine(RiskEngine):
         * :return: None
         """
 
-        # Calculate the portfolio statistics
+        # Calculate the first-order portfolio statistics
         mean = self.mean(self.portfolio_returns)
         variance = self.variance(self.portfolio_returns)
         standard_deviation = self.standard_deviation(self.portfolio_returns)
@@ -115,34 +119,69 @@ class StockRiskEngine(RiskEngine):
         print(f"Kurtosis of Portfolio Returns:  -------  {kurtosis:.4f}")
         print('==================================================')
 
-        # Plot the portfolio returns and distribution
+        # Plot the portfolio returns and distributios
         if plot:
-            fig, axes = plt.subplots(1, 2, figsize = (15, 5))
+            fig, axes = plt.subplots(2, 2, figsize = (18, 12))
 
-            # Plot the historical returns of the portfolio
+            # Plot the historical returns of the portfolio ====================
             cummulative_portfolio_returns = np.cumsum(self.portfolio_returns)
             cummulative_market_returns = np.cumsum(self.market_returns)
 
-            axes[0].plot(cummulative_portfolio_returns, label="Portfolio Returns")
-            axes[0].plot(cummulative_market_returns, label="Market Returns")
-            axes[0].legend()
-            axes[0].set_title("Portfolio Returns")
-            axes[0].set_xlabel("Days")
-            axes[0].set_ylabel("Returns")
+            axes[0][0].plot(cummulative_portfolio_returns, label="Portfolio Returns")
+            axes[0][0].plot(cummulative_market_returns, label="Market Returns")
+            axes[0][0].legend()
+            axes[0][0].set_title("Portfolio Returns")
+            axes[0][0].set_xlabel("Days")
+            axes[0][0].set_ylabel("Returns")
 
-            # Plot the historical return distribution
-            axes[1].hist(self.portfolio_returns, bins = 50, edgecolor = 'black', alpha = 0.7)
-            axes[1].set_title('Portfolio Returns Distribution')
-            axes[1].set_xlabel('Returns')
-            axes[1].set_ylabel('Frequency')
+            axes[0][1].plot(self.portfolio_returns, label="Daily Portfolio Returns")
+            axes[0][1].legend()
+            axes[0][1].set_title("Daily Portfolio Returns")
+            axes[0][1].set_xlabel("Days")
+            axes[0][1].set_ylabel("Returns")
+
+            # Plot the historical return distribution ====================
+            var = self.PortfolioVAR(confidence_interval=0.01)
+            axes[1][0].hist(self.portfolio_returns, bins = 50, alpha = 0.7, density = True, label="Portfolio Returns")
+            axes[1][0].axvline(x=var, color='cyan', label='99% VaR')
+            axes[1][0].axvline(x=np.mean(self.portfolio_returns), color="black", alpha=1, label='Mean')
+            axes[1][0].legend()
+            axes[1][0].set_title('Portfolio Returns Distribution')
+            axes[1][0].set_xlabel('Daily Returns')
+            axes[1][0].set_ylabel('Frequency')
+
+            mu, std = norm.fit(self.portfolio_returns)
+            xmin, xmax = axes[1][0].get_xlim()
+            x = np.linspace(xmin, xmax, 100)
+            p = norm.pdf(x, mu, std)
+            axes[1][0].plot(x, p, 'k', linewidth=0.5, label='Daily Return Distribution')
+
+            # Plot the cummulative distribution function (CDF) ====================
+            var_values = []
+            ci_values = []
+
+            start = 0
+            stop = 1
+            increment = 0.05
+            i = start
+            while i <= stop:
+                var_values.append(self.PortfolioVAR(confidence_interval=i))
+                ci_values.append(i)
+
+                i += increment
+
+            axes[1][1].plot(var_values, ci_values)
+            axes[1][1].set_title("VaR Cummulative Distribution")
+            axes[1][1].set_xlabel("VaR (%)")
+            axes[1][1].set_ylabel("Confidence Interval")
 
             # Show the plot
             plt.show()
 
     ####################################################################
-    # Value at Risk Functions
+    # Historical Value at Risk Functions
     ####################################################################
-    def IndividualVAR(self, symbol: str, confidence_interval: float = 0.99) -> float:
+    def IndividualVAR(self, symbol: str, confidence_interval: float = 0.01) -> float:
         """
         * IndividualVAR()
         *
@@ -156,8 +195,8 @@ class StockRiskEngine(RiskEngine):
         """
 
         # Validate confidence interval
-        if confidence_interval <= 0.01 or confidence_interval >= 1:
-            raise ValueError('Confidence interval must be greater than 0 and less than 1...')
+        if confidence_interval < 0 or confidence_interval > 1:
+            raise ValueError('Confidence interval must be greater than or equal to 0 and less than or equal to 1...')
 
         # Get the asset returns
         asset_return = self.get_asset_returns(symbol)
@@ -172,9 +211,9 @@ class StockRiskEngine(RiskEngine):
 
         return var
 
-    def BasicPortfolioVAR(self, confidence_interval: float = 0.99, dollar_based: bool = False) -> float:
+    def PortfolioVAR(self, confidence_interval: float = 0.01, dollar_based: bool = False) -> float:
         """
-        * BasicPortfolioVAR()
+        * PortfolioVAR()
         *
         * Calculates the basic portfolio value at risk (VAR) using the covariance
         * matrix of the portfolio's assets. This method calculates VAR based on its
@@ -193,8 +232,8 @@ class StockRiskEngine(RiskEngine):
         """
 
         # Validate confidence interval
-        if confidence_interval <= 0.01 or confidence_interval >= 1:
-            raise ValueError('Confidence interval must be greater than 0 and less than 1...')
+        if confidence_interval < 0 or confidence_interval > 1:
+            raise ValueError('Confidence interval must be greater than or equal to 0 and less than or equal to 1...')
 
         # Calculate the covariance matrix
         cov_matrix = np.cov(self.portfolio_asset_returns, rowvar = True)
@@ -213,7 +252,35 @@ class StockRiskEngine(RiskEngine):
         else:
             return var
 
-    def MarginalLocalVAR(self, symbol: str, confidence_interval: float = 0.99, dollar_based: bool = False) -> float:
+    def ConditionalVAR(self, confidence_interval: float = 0.01, dollar_based: bool = False) -> float:
+        """
+        * ConditionalVAR()
+        *
+        * Calculates the conditional value at risk (CVAR) for the portfolio.
+        * CVAR measures the expected loss that exceeds the VAR's threshold, and provides
+        * an estimate of the average loss in extreme scenarios beyond the VAR limit.
+        *
+        * confidence_interval: confidence interval for the VAR calculation
+        * dollar_based: if True, return the portfolio VAR change in dollars, else return in percentage
+        * :returns: the conditional VAR (in absolute return terms), None if failure
+        """
+
+        # Sort the portfolio returns from smallest to largest
+        portfolio_returns = sorted(self.portfolio_returns)
+
+        # Calculate the VAR threshold
+        observations = len(portfolio_returns)
+        threshold = int(observations * (1 - confidence_interval))
+
+        # Calculate conditional VaR (CVaR)
+        c_var = portfolio_returns[threshold]
+
+        if dollar_based:
+            return c_var * calculate_portfolio_value(self.portfolio_shares, self.portfolio_prices)
+        else:
+            return c_var
+
+    def MarginalLocalVAR(self, symbol: str, confidence_interval: float = 0.01, dollar_based: bool = False) -> float:
         """
         * MarginalLocalVAR()
         *
@@ -232,14 +299,14 @@ class StockRiskEngine(RiskEngine):
         """
 
         # Validate the confidence interval
-        if confidence_interval <= 0.01 or confidence_interval >= 1:
-            raise ValueError('Confidence interval must be greater than 0 and less than 1...')
+        if confidence_interval < 0 or confidence_interval > 1:
+            raise ValueError('Confidence interval must be greater than or equal to 0 and less than or equal to 1...')
 
         # Calculate the CRITICAL z-score
         z_score = self.critical_z_score(confidence_interval)
 
         # Calculate the portfolio VAR
-        portfolio_var = self.BasicPortfolioVAR(confidence_interval, dollar_based = False)
+        portfolio_var = self.PortfolioVAR(confidence_interval, dollar_based = False)
 
         beta = self.Beta(self.get_asset_returns(symbol), self.market_returns)
 
@@ -251,7 +318,7 @@ class StockRiskEngine(RiskEngine):
         else:
             return m_var
 
-    def IncrementalLocalVAR(self, symbol: str, weight_change: float, confidence_interval: float = 0.99, dollar_based: bool = False) -> float:
+    def IncrementalLocalVAR(self, symbol: str, weight_change: float, confidence_interval: float = 0.01, dollar_based: bool = False) -> float:
         """
         * IncrementalLocalVAR()
         *
@@ -272,8 +339,8 @@ class StockRiskEngine(RiskEngine):
         """
 
         # Validate the confidence interval
-        if confidence_interval <= 0.01 or confidence_interval >= 1:
-            raise ValueError('Confidence interval must be greater than 0 and less than 1...')
+        if confidence_interval < 0 or confidence_interval > 1:
+            raise ValueError('Confidence interval must be greater than or equal to 0 and less than or equal to 1...')
 
         # Calculate the marginal VaR for the position
         m_var = self.MarginalLocalVAR(symbol, confidence_interval)
@@ -286,7 +353,7 @@ class StockRiskEngine(RiskEngine):
         else:
             return i_var
 
-    def ComponentLocalVAR(self, symbol: str, confidence_interval: float = 0.99, dollar_based: bool = False) -> float:
+    def ComponentLocalVAR(self, symbol: str, confidence_interval: float = 0.01, dollar_based: bool = False) -> float:
         """
         * ComponentLocalVAR()
         *
@@ -303,15 +370,15 @@ class StockRiskEngine(RiskEngine):
         """
 
         # Validate the confidence interval
-        if confidence_interval <= 0.01 or confidence_interval >= 1:
-            raise ValueError('Confidence interval must be greater than 0 and less than 1...')
+        if confidence_interval < 0 or confidence_interval > 1:
+            raise ValueError('Confidence interval must be greater than or equal to 0 and less than or equal to 1...')
 
         # Calculate the component's beta
         beta = self.Beta(self.get_asset_returns(symbol), self.market_returns)
         weight = self.get_asset_weight(symbol)
 
         # Calculate the component VaR
-        c_var = self.BasicPortfolioVAR(confidence_interval) * beta * weight
+        c_var = self.PortfolioVAR(confidence_interval) * beta * weight
 
         if dollar_based:
             return c_var * calculate_portfolio_value(self.portfolio_shares, self.portfolio_prices)

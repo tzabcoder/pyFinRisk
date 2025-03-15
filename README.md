@@ -26,6 +26,12 @@ $$
 Portfolio\hspace{0.1cm}VaR = ασ_pw = α\sqrt{w'Σw}
 $$
 
+* **Conditional VaR** - Value at Risk measures the estimated average loss in extreme scenarios beyond the VaR limit.
+
+$$
+CVaR_α=E[X|X<=VaR_α]
+$$
+
 * **Marginal VaR** - *Change* in Portfolio VaR resulting from taking additional (marginal) exposure to a given risk factor. Partial (linear) derivative with respect to the component's position.
 
 $$
@@ -59,6 +65,7 @@ For equity-based portfolios:
 * Beta
 * Individual (positional) VaR
 * Portfolio VaR
+* Conditional VaR
 * Marginal VaR
 * Incremental VaR
 * Component VaR
@@ -118,8 +125,8 @@ riskEngine.DisplayPortfolioStatistics(plot=True)
 individual_var = riskEngine.IndividualVAR(symbol='JPM', confidence_interval=0.95)
 
 # Calculate the Portfolio VaR
-portfolio_var_pct = riskEngine.BasicPortfolioVAR(confidence_interval=0.99) # Returns %
-portfolio_var_dollar = riskEngine.BasicPortfolioVAR(confidence_interval=0.99, dollar_based=True) # Returns $
+portfolio_var_pct = riskEngine.PortfolioVAR(confidence_interval=0.99) # Returns %
+portfolio_var_dollar = riskEngine.PortfolioVAR(confidence_interval=0.99, dollar_based=True) # Returns $
 
 # Calculate the Marginal VaR
 marginal_var = riskEngine.MarginalLocalVAR(symbol='AAPL')
@@ -138,7 +145,6 @@ component_var = riskEngine.ComponentLocalVAR(symbol='LLY')
 For running the unit tests, execute the following command from the top-level directory:
 
 `python -m test.test`
-
 
 For running the example, execute the following command from the top-level directory:
 
