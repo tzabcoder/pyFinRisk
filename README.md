@@ -13,7 +13,11 @@ Ex: Take the 99% confidence interval. VaR is the cutoff such that the probabilit
 * **Portfolio VaR** - Portfolio VaR measures the total value at risk of a portfolio of components (risk factors).
 
 $$
-σ_p^2 = \begin{bmatrix} w_1 & w_2 & ... & w_n \end{bmatrix}\begin{bmatrix} σ_1^2 & σ_{12} & ... & σ_{1N} \\ ... & ... & ... & ... \\ σ_{N1} & σ_{N2} & ... & σ_N^2 \end{bmatrix}\begin{bmatrix} w_1 \\ w_2 \\ ... \\ w_n \end{bmatrix}
+\sigma_p^2 = \begin{bmatrix} w_1 & w_2 & ... & w_n \end{bmatrix}
+\begin{bmatrix} \sigma_1^2 & \sigma_{12} & ... & \sigma_{1N} \\
+... & ... & ... & ... \\
+\sigma_{N1} & \sigma_{N2} & ... & \sigma_N^2 \end{bmatrix}
+\begin{bmatrix} w_1 \\ w_2 \\ ... \\ w_n \end{bmatrix}
 $$
 
 $$
@@ -51,7 +55,7 @@ where a is a change, either positive or negative, in the component. It must be n
 * **Component VaR** - *Change* in Portfolio VaR resulting from the removal of a risk factor.
 
 $$
-CVaR_i=(ΔVaR_i)*w_iW=\frac{VaR*β_i}{W}*w_iW=VaR*β_i*w_i
+CVaR_i=(\Delta VaR_i)w_iW=\frac{VaR_i*{\beta_i}}{W}w_iW=VaR_i*{\beta_i}w_i
 $$
 
 where $w_i$ is the weight of the risk factor and $β_i$ is the component beta. It must be noted that this is only an approximation and works well with larger portfolios.
