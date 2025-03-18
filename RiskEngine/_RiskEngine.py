@@ -1,6 +1,7 @@
 # Global Package Imports
 import math
 import pandas as pd
+import numpy as np
 import scipy.stats as stats
 
 # Local Package Imports
@@ -200,7 +201,7 @@ class RiskEngine:
         * :returns: mean
         """
 
-        return sum(arr) / len(arr)
+        return np.mean(arr)
 
     def variance(self, arr: list, sample: bool = True) -> float:
         """
@@ -213,10 +214,7 @@ class RiskEngine:
         * :returns: variance
         """
 
-        n = len(arr)
-
-        mu = self.mean(arr)
-        return sum((x - mu) ** 2 for x in arr) / (n - 1 if sample else n)
+        return np.var(arr, ddof=1 if sample else 0)
 
     def standard_deviation(self, arr: list, sample: bool = True) -> float:
         """
@@ -242,15 +240,7 @@ class RiskEngine:
         * :returns: skew
         """
 
-        n = len(arr)
-
-        mu = self.mean(arr)
-        sd = self.standard_deviation(arr, sample)
-
-        # Apply Bessel's correction for sample skewness
-        bessel = n / ((n - 1)*(n - 2))
-
-        return (bessel if sample else 1) * sum(((x - mu) / sd) ** 3 for x in arr)
+        return stats.skew(arr)
 
 
     def kurtosis(self, arr: list, sample: bool = True) -> float:
@@ -264,15 +254,4 @@ class RiskEngine:
         * :returns: kurtosis
         """
 
-        n = len(arr)
-
-        mu = self.mean(arr)
-        sd = self.standard_deviation(arr, sample)
-
-        # Always apply the bias factor if a sample
-        bias = (n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3))
-
-        # Apply sample bias adjustment
-        sample_adj = (3 * (n - 1) ** 2) / ((n - 2) * (n - 3))
-
-        return (bias if sample else 1) * sum(((x - mu) / sd) ** 4 for x in arr) - (sample_adj if sample else 1)
+        return stats.kurtosis(arr)

@@ -2,8 +2,6 @@
 import yfinance as yf
 import pandas as pd
 
-# Local Package Imports
-
 class DataReader:
     def __init__(self, file_path: str, xlxs: bool = True) -> None:
         """
