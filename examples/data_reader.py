@@ -4,6 +4,7 @@ from RiskEngine.StockRiskEngine import StockRiskEngine
 
 def main():
     # Create the data reader
+    # NOTE: This file and directory must exist for the code to run
     data_reader = DataReader('data/Account_Positions.xlsx', xlxs=True)
     data = data_reader.ReadData()
     portfolio_details = data_reader.CreateEquityPortfolioDetails(
