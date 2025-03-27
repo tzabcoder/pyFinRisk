@@ -1,6 +1,7 @@
 # Global Imports
 import math
 import yfinance as yf
+import matplotlib.pyplot as plt
 
 # Local Imports
 from RiskEngine.StockRiskEngine import StockRiskEngine
@@ -163,6 +164,30 @@ class UnitTest:
         else:
             print("PortfolioVAR(): FAILED...\n")
             return False
+
+    def SimulatedPortfolioVAR(self, test_counter: int) -> int:
+        """
+        * SimulatedPortfolioVAR()
+        *
+        * This function tests the simulated portfolio VAR calculation.
+        * The function calculates the simulated portfolio vars and displays the
+        * simulated distribution.
+        * This method is tested through visual inspection, as the simulated VARs
+        * should approvimately create a normal distribution.
+        """
+
+        print(f"Running Test: SimulatedPortfolioVAR() - Test {test_counter}...")
+
+        sims = 10_000 # Run 10,000 simulations for the portfolio VAR
+        n = 21        # Simulate the VAR over the next month
+
+        sim_var = self.stock_risk_engine.SimulatedPortfolioVAR(sims, n)
+
+        print(f'Simulated VAR (99%) | sims={sims} n={n}: {sim_var}')
+
+        # All tests passed
+        print("SimulatedPortfolioVAR(): All VAR tests PASSED.\n")
+        return True
 
     def ConditionalVAR(self, test_counter: int) -> int:
         """
@@ -366,7 +391,7 @@ class UnitTest:
         print(f"Running Test: DisplayPortfolioStatistics() - Test {test_counter}...")
 
         # Display the portfolio statistics
-        self.stock_risk_engine.DisplayPortfolioStatistics(plot=True)
+        self.stock_risk_engine.PortfolioStatistics(display=True, plot=True)
 
         return True
 
@@ -390,6 +415,9 @@ class UnitTest:
         test_counter += 1
 
         test_result |= self.PortfolioVAR(test_counter)
+        test_counter += 1
+
+        test_result |= self.SimulatedPortfolioVAR(test_counter)
         test_counter += 1
 
         test_counter += self.ConditionalVAR(test_counter)

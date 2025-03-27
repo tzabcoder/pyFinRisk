@@ -54,6 +54,12 @@ class RiskEngine:
         self._portfolio_returns = calculate_returns_from_holdings(self._portfolio_details)
         self._market_returns = calculate_returns(self._market_prices)
 
+        # Asset return dataframe
+        self._asset_return_df = pd.DataFrame(self._portfolio_details['Returns']).T
+        self._asset_return_df.columns = self._portfolio_details['Symbols']
+
+        self._correlation_matrix = self._asset_return_df.corr()
+
     ####################################################################
     # Getter Properties
     ####################################################################
@@ -255,3 +261,77 @@ class RiskEngine:
         """
 
         return stats.kurtosis(arr)
+
+    ####################################################################
+    # Simulation Functions
+    ####################################################################
+    def cholesky_decomposition(self, matrix: pd.DataFrame) -> list:
+        """
+        * cholesky_decomposition()
+        *
+        * Calculates the Cholesky decomposition of a matrix.
+        *
+        * matrix: matrix to factor
+        * :returns: the lower triagular factored matrix
+        """
+
+        try:
+            lower_triangular = np.linalg.cholesky(matrix)
+            return lower_triangular
+        except Exception as e:
+            raise np.linalg.LinAlgError(f"Cholesky Decomposition Error: {e}")
+
+    def simulate_returns(self, n: int) -> list:
+        """
+        * simulate_returns()
+        *
+        * Simulates the returns for the portfolio.
+        * N random numbers drawn from a standard normal distribution to imitate a random outcome
+        * for each asset. Cholesky decomposition is used to factorize the correlation matrix and calculate
+        * a set of correlated simulated returns.
+        * The simulted price path for each asset is simulated using GBM (Geometric Brownian Motion).
+        *
+        * dS(t) = mu * S(t) * dt + sigma * S(t) * dW(t)
+        * where:
+        *  - mu * S(t) * dt is the drift component
+        *  - sigma * S(t) * dW(t) is the stochastic component
+        *
+        * n: number of prices to simulate in the future
+        *    Ex: for 1-month ahead, n = 21
+        *        for 1-year ahead, n = 252
+        * :returns: the simulated portfolio return list
+        """
+
+        # Factor the correlation matrix
+        L = self.cholesky_decomposition(self._correlation_matrix).T
+
+        # Calculate the standard deviations of returns
+        stddevs = self._asset_return_df.std().values
+
+        # Simulate the random events
+        random_events = np.random.normal(size=(n, len(self.portfolio_symbols)))
+
+        # Calcualte the transformed returns.
+        # The transformed returns includes the correlations among the asset returns.
+        transformed_returns = pd.DataFrame((random_events @ L), columns=self.portfolio_symbols)
+
+        # Last known asset prices
+        last_prices = np.array([self.get_asset_prices(s)[-1] for s in self.portfolio_symbols])
+
+        # Simulate the price path
+        simulated_prices = np.zeros((n, len(self.portfolio_symbols)))
+        simulated_prices[0, :] = last_prices
+
+        for t in range(1, n):
+            simulated_prices[t, :] = simulated_prices[t-1, :] * np.exp(stddevs * transformed_returns.iloc[t, :])
+
+        simulated_prices = pd.DataFrame(simulated_prices, columns=self.portfolio_symbols)
+
+        # Calculate the simulated returns
+        simulated_returns = simulated_prices.pct_change()
+        simulated_returns.dropna(inplace=True)
+
+        # Calculate the simulated portfolio
+        simulated_portfolio = ((self.portfolio_shares * last_prices) * simulated_returns).sum(axis=1)
+
+        return simulated_portfolio
