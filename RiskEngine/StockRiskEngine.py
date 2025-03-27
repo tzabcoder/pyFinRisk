@@ -87,13 +87,15 @@ class StockRiskEngine(RiskEngine):
 
         return beta
 
-    def DisplayPortfolioStatistics(self, plot: bool = False) -> None:
+    def PortfolioStatistics(self, display: bool = False, plot: bool = False) -> dict:
         """
-        * DisplayPortfolioStatistics()
+        * PortfolioStatistics()
         *
-        * Displays the first-order portfolio statistics relating to the return distribution.
+        * Get the first-order portfolio statistics relating to the return distribution.
         * The first-order statistics describe the historical return distribution of the
-        * portfolio. If the plot flag is true, the function will plot the historical portfolio
+        * portfolio.
+        * If the display flag is true, the function will display the portfolio statistics.
+        * If the plot flag is true, the function will plot the historical portfolio
         * returns vs. the market and the distribution of historical returns.
         *
         * plot: flag to plot the portfolio statistics
@@ -101,23 +103,26 @@ class StockRiskEngine(RiskEngine):
         """
 
         # Calculate the first-order portfolio statistics
-        mean = self.mean(self.portfolio_returns)
-        variance = self.variance(self.portfolio_returns)
-        standard_deviation = self.standard_deviation(self.portfolio_returns)
-        skewness = self.skewness(self.portfolio_returns)
-        kurtosis = self.kurtosis(self.portfolio_returns)
-        beta = self.Beta(self.portfolio_returns, self.market_returns)
+        statistics = {
+            'mean' :               self.mean(self.portfolio_returns),
+            'variance' :           self.variance(self.portfolio_returns),
+            'standard_deviation' : self.standard_deviation(self.portfolio_returns),
+            'skew' :               self.skewness(self.portfolio_returns),
+            'kurtosis' :           self.kurtosis(self.portfolio_returns),
+            'beta' :               self.Beta(self.portfolio_returns, self.market_returns)
+        }
 
         # Display the portfolio statistics
-        print("Portfolio Statistics")
-        print('==================================================')
-        print(f"Beta of Portfolio:  -------------------  {beta:.4f}")
-        print(f"Mean of Portfolio Returns:  -----------  {(mean * 100):.4f}%")
-        print(f"Variance of Portfolio Returns:  -------  {(variance * 100):.4f}%")
-        print(f"Standard Deviation of Portfolio Returns: {(standard_deviation * 100):.4f}%")
-        print(f"Skewness of Portfolio Returns:  -------  {skewness:.4f}")
-        print(f"Kurtosis of Portfolio Returns:  -------  {kurtosis:.4f}")
-        print('==================================================')
+        if display:
+            print("Portfolio Statistics")
+            print('==================================================')
+            print(f"Beta of Portfolio:  -------------------  {statistics['beta']:.4f}")
+            print(f"Mean of Portfolio Returns:  -----------  {(statistics['mean'] * 100):.4f}%")
+            print(f"Variance of Portfolio Returns:  -------  {(statistics['variance'] * 100):.4f}%")
+            print(f"Standard Deviation of Portfolio Returns: {(statistics['standard_deviation'] * 100):.4f}%")
+            print(f"Skewness of Portfolio Returns:  -------  {statistics['skew']:.4f}")
+            print(f"Kurtosis of Portfolio Returns:  -------  {statistics['kurtosis']:.4f}")
+            print('==================================================')
 
         # Plot the portfolio returns and distributios
         if plot:
@@ -178,6 +183,8 @@ class StockRiskEngine(RiskEngine):
             # Show the plot
             plt.show()
 
+        return statistics
+
     ####################################################################
     # Historical Value at Risk Functions
     ####################################################################
@@ -215,7 +222,7 @@ class StockRiskEngine(RiskEngine):
         """
         * PortfolioVAR()
         *
-        * Calculates the basic portfolio value at risk (VAR) using the covariance
+        * Calculates the basic historical portfolio value at risk (VAR) using the covariance
         * matrix of the portfolio's assets. This method calculates VAR based on its
         * historical asset returns.
         * The portfolio variance is calculated as:
@@ -251,6 +258,35 @@ class StockRiskEngine(RiskEngine):
             return var * calculate_portfolio_value(self.portfolio_shares, self.portfolio_prices)
         else:
             return var
+
+    def SimulatedPortfolioVAR(self, sims: int, n: int, confidence_interval: float = 0.01) -> float:
+        """
+        * SimulatedPortfolioVAR()
+        *
+        * Simulates the portfolio VAR over the next n days using Monte Carlo sims and Geometric
+        * Brownian Motion (GBM). The portfolio VAR is calculated a number of times and averaged
+        * to obtain the forecasted VAR over the next n days.
+        *
+        * sims: number of times to simulate the portfolio VAR
+        * n: number of days to estimate one occurence of portfolio VAR
+        * confidence_interval: confidence interval for the VAR calculation
+        * dollar_based: if True, return the portfolio VAR change in dollars, else return in percentage
+        * :returns: the simulated dollar-based portfolio VAR over the next n days
+        """
+
+        simulated_vars = []
+
+        # Run all simulations
+        for i in range(sims):
+            p_var = self.simulate_returns(n)
+
+            # Calculate the VAR threshold
+            observations = len(p_var)
+            threshold = int(observations * (1 - confidence_interval))
+
+            simulated_vars.append(sorted(p_var, reverse=True)[threshold])
+
+        return sum(simulated_vars) / len(simulated_vars)
 
     def ConditionalVAR(self, confidence_interval: float = 0.01, dollar_based: bool = False) -> float:
         """
@@ -379,6 +415,8 @@ class StockRiskEngine(RiskEngine):
 
         # Calculate the component VaR
         c_var = self.PortfolioVAR(confidence_interval) * beta * weight
+
+        self.simulate_returns(1000)
 
         if dollar_based:
             return c_var * calculate_portfolio_value(self.portfolio_shares, self.portfolio_prices)

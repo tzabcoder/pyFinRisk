@@ -38,7 +38,7 @@ market_prices = yf.download('SPY', period='1y', interval='1d', auto_adjust=False
 riskEngine = StockRiskEngine(portfolio_details, market_prices)
 
 # Display and plot the portfolio statistics
-riskEngine.DisplayPortfolioStatistics(plot=True)
+stats = riskEngine.PortfolioStatistics(display=True, plot=True)
 
 # Calculate the Individual VaR for a component
 individual_var = riskEngine.IndividualVAR(symbol='JPM', confidence_interval=0.95)
