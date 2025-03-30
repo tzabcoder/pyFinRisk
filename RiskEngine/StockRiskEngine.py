@@ -416,8 +416,6 @@ class StockRiskEngine(RiskEngine):
         # Calculate the component VaR
         c_var = self.PortfolioVAR(confidence_interval) * beta * weight
 
-        self.simulate_returns(1000)
-
         if dollar_based:
             return c_var * calculate_portfolio_value(self.portfolio_shares, self.portfolio_prices)
         else:
