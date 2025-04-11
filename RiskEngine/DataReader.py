@@ -45,7 +45,7 @@ class DataReader:
         * :returns: list containing the market prices for the given symbol
         """
 
-        market_prices = yf.download(symbol, period=period, interval=interval)['Close'][symbol].tolist()
+        market_prices = yf.download(symbol, period=period, interval=interval, auto_adjust=True)['Close'][symbol].tolist()
         return market_prices
 
     def CreateEquityPortfolioDetails(self, data: pd.DataFrame, symbols_id: str, qty_id: str, period: str, interval: str) -> dict:
@@ -68,7 +68,7 @@ class DataReader:
         shares = data[qty_id].tolist()
 
         # Download the historical data and extract prices
-        historical_data = yf.download(symbols, period=period, interval=interval)['Close']
+        historical_data = yf.download(symbols, period=period, interval=interval, auto_adjust=True)['Close']
         prices = [historical_data[symbol].tolist() for symbol in symbols]
 
         portfolio_details = {

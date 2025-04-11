@@ -281,9 +281,9 @@ class RiskEngine:
         except Exception as e:
             raise np.linalg.LinAlgError(f"Cholesky Decomposition Error: {e}")
 
-    def simulate_returns(self, n: int) -> list:
+    def simulate_portfolio_returns(self, n: int) -> list:
         """
-        * simulate_returns()
+        * simulate_portfolio_returns()
         *
         * Simulates the returns for the portfolio.
         * N random numbers drawn from a standard normal distribution to imitate a random outcome
@@ -299,7 +299,7 @@ class RiskEngine:
         * n: number of prices to simulate in the future
         *    Ex: for 1-month ahead, n = 21
         *        for 1-year ahead, n = 252
-        * :returns: the simulated portfolio return list
+        * :returns: the simulated portfolio price list
         """
 
         # Factor the correlation matrix
