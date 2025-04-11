@@ -43,7 +43,7 @@ class StockRiskEngine(RiskEngine):
         * NOTE: the market returns must be at least as long as the portfolio returns
         """
 
-        RiskEngine.__init__(self, portfolio_details, market_prices)
+        super().__init__(portfolio_details, market_prices)
 
     ####################################################################
     # Support Functions
@@ -278,7 +278,7 @@ class StockRiskEngine(RiskEngine):
 
         # Run all simulations
         for i in range(sims):
-            p_var = self.simulate_returns(n)
+            p_var = self.simulate_portfolio_returns(n)
 
             # Calculate the VAR threshold
             observations = len(p_var)
